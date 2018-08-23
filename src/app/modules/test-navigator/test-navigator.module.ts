@@ -6,6 +6,11 @@ import { TestNavigatorComponent } from './test-navigator.component';
   imports: [
     CommonModule
   ],
-  declarations: [TestNavigatorComponent]
+  declarations: [
+    TestNavigatorComponent
+  ],
+  exports: [
+    TestNavigatorComponent
+  ]
 })
 export class TestNavigatorModule { }
