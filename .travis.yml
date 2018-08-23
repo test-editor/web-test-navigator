@@ -1,0 +1,62 @@
+dist: trusty
+sudo: false
+language: node_js
+node_js:
+- '9'
+os:
+- linux
+cache: yarn
+
+env:
+  global:
+    - # Environment variables for NPM version patch
+    - secure: "jeL5maE0u5/FZhbjsnreRxqAWBFc/7A54ppnRLQZRFEsNfKS2HDXFo5uXjrDByZofs7AzV1PQrUjMb5ZPOjhS6KMIBx8eT/ZgTuE66HjE7W921X926HgAbVSAGw2usvsBPtcCyMJ557qURP5FCE9hPopIAvs8ghRAaejfAphu2GVwB6Nd7BryZRtN+qIZk/fU9ObO0ztue8bogJnKtPVzrww1YIq2R0Ev0XFgiNvOm8xse2wipZtaOUF+dcejnnPiniOO/e9yjANaJR9X/kPXRfWeanKTKPI3ECkFCEhsCala/WJR9X5DpDF6Fae6EOa7RApiRdQ4ec6wTZjIqgc3w/OieN7m7ZIPYij7H+s3lU0pjOBpD48jn/LnGKdISnLKacbGUw7BrYg3ta15tOTf9ND7/wkamhn1JRPrp+GaWz+IlG0MrOfEVKmpYm2zPEHPI/f6jPEYJaCXxxubDzrsIFsx85Sv/y1DDGUjbeVb+wVO8aZT7mHZYmdWH+wBirnkLxxy0GXn0N91ZSZxloQyTRqI0p9TgN/BiThaotap4BrZWqkxDtI5Hpc5VEPrY+ZA5CIQwnld478grXG9a8YMfTVgtMyd8tN79qhAMHEIz2JSeC3mZpYgwrnjMydv3+nw3FrlMzv+5YmEWkO8Zrn6CzobUYPCckC25AapaFur9s="
+    - secure: "mFoax5oOo2osM0U36wiZQqKRsNAX3mr0Ty5/W+Ev+/eXDGvKZTIKrD5UTMWkjMHhkH1txNKUxs2zzrgfhe9BZ50iI9UyU1fDYB7lIaAQL2WRkJ+rmgvEV3R5HvILQU3hMpB+zrlLZxmWkxpkmMUBtuuNaQSvH7UPLNdJLK8Fz/MXA7zgZUj3j8DRiQ1MESKUGaaimkNLOmzjgg4173bYme1NpxBup60UCvIjxVdajOpBWhILsEc79QpD4ZHJjdcbbbBtFbgmzhNGJxhY1g0OMfgfDMRV3xGQ5/Cw4bUxtCZ9WSQMBe50MJLfiULh82M7PoKEB5ZBWHKDQ2U25NoXB1fwgl32AStt2AUZJ6C+oIVoRm6A8V3laqSGJF3UGIMubrj+qUyJaZPCMaLXZCyNfz0xyFYnh/1um+yYZOlJFMblndMvTt5litP8rhGHLqB59ltSoJvuAsfn4PWXIwKTEmcuxjMG2B5OQOSLD0uPxqasuhbU6oowxy3qsfg9ZCdi8wZADOXTxzG/MWLAetaKpT4MjTriFGu3jwlRsEdBLhp9BxxotdhCZ5UjTcPUSzCRlncza3bS/gIQVVwa5D/AwZStFi82nE2eTuvitk8IGa8AFdSs4F1uRoCv3+DJxSt3AWNpV5g1sIqJO/eZIdylIuMmo86J4+sbGs5KclxktqI="
+
+  matrix:
+    - FIREFOX_VERSION="latest"
+    - FIREFOX_VERSION="59.0.2"
+
+before_install:
+- echo $FIREFOX_VERSION
+- export FIREFOX_SOURCE_URL='https://download.mozilla.org/?product=firefox-'$FIREFOX_VERSION'&lang=en-US&os=linux64'
+- wget --no-verbose -O /tmp/firefox-$FIREFOX_VERSION.tar.bz2 $FIREFOX_SOURCE_URL
+- mkdir /tmp/firefox-$FIREFOX_VERSION
+- tar -xvf /tmp/firefox-$FIREFOX_VERSION.tar.bz2 -C /tmp/firefox-$FIREFOX_VERSION
+- export PATH=/tmp/firefox-$FIREFOX_VERSION/firefox:$PATH
+- export DISPLAY=:99.0
+- sh -e /etc/init.d/xvfb start
+- export CHROME_BIN=/usr/bin/google-chrome
+- curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.7.0
+- export PATH="$HOME/.yarn/bin:$PATH"
+- sudo apt-get update
+- sudo apt-get install -y libappindicator1 fonts-liberation google-chrome-stable
+install:
+- yarn install
+script:
+- firefox --version
+- yarn run lint
+- yarn run test:once
+- yarn run e2e
+after_success:
+- yarn run packagr
+# Autoincrement of patch level version:
+# Tag the repo with a new patch level version tag, if this build is done on
+#     'FIREFOX_VERSION = latest' and (only one of the matrix-builds is relevant)
+#     this is not a pull request and (pull requests themselves should not autoincrement)
+#     this branch is the master branch and (only builds on master are relevant)
+#     there is no tag given (if a tag is alread given, this one will be published and should not again be tagged!)
+- 'if [ "$FIREFOX_VERSION" = "latest" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_TAG" = "" ]; then wget https://github.com/test-editor/commons-build-automation/raw/master/travis/deploy/tag_with_new_patch_version.sh; bash tag_with_new_patch_version.sh; fi'
+before_deploy:
+- touch .npmignore
+- cd dist/
+deploy:
+  skip_cleanup: true
+  provider: npm
+  email: service.eng@akquinet.de
+  api_key:
+    secure: "V4riphZpWG4P1VPueJnbP3mZIurjNdh3CgfYjtgv/He88ZYi1tmBb91AogkzTUwkEuAJHNzyPFRzzH9fkIpqIRXloB76hxU7Aoh5VGBOzHVW+bd6LYitvFTfOgJT5eMCHu5P7sLQW9r33kpJPrIa7iV7JhpEeeGBHYJ2II5yPpN0Z6rgzriGqEzE1Bh1o+HvWDmX781JhpizqGvfX7ZQIm/qFiaM92W5U3pe03XhvEPBQgh/xi2d/k0+srdzurC+q+N2Rpefxu9xh6eg62ww4EKKk9tZgjG6dBTJum6EIrnw2fuD3gYhM707gEwaPnfgvNPwphw4xIGPR/f72MQ1OzfYuzLp79TQ05SLjRmlXZoE93VKf4bHg2eNpWTTy1grqPWBcBrwJh2uHUGfZNEHQc1EwET8hiJgs+DiwwQ21jBcbcceQDUO4FRPosW5XX+LA/GOv0xlSQNaB/vWujr5zwbFDWF0Q4fcMM9KizDOg5Skz6C9D0ITYOg1ljM7+b6O206XYJpes92eGpPBt2cemag6aJVMa5rDntPhhH5ljbGVEFfaP+B/v/OkvsGAIEowbYrPnPG7gJK/Edpg5YEPVc8V2EbD0Gm+cFFf1AsSj6g6AWYPqq0SAkkxXfO1iyamzbtSBbOO2gTLtPBgcWhrmof+ceVWQMtPNOFOaGiDoxg="
+  on:
+    condition: "$FIREFOX_VERSION = latest"
+    tags: true
+    repo: test-editor/web-test-navigator
