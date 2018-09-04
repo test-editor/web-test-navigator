@@ -60,4 +60,9 @@ export class TestNavigatorTreeNode implements TreeNode {
 
     return cssClasses;
   }
+
+  forEach(callbackfn: (value: TestNavigatorTreeNode) => void) {
+    callbackfn(this);
+    this.children.forEach((child) => (child as TestNavigatorTreeNode).forEach(callbackfn));
+  }
 }

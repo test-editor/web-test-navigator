@@ -51,4 +51,25 @@ describe('TestNavigatorTreeNode', () => {
     expect(actualTreeNode.children[0].name).toEqual(workspaceTree.children[0].name);
     expect(actualTreeNode.children[0].id).toEqual(workspaceTree.children[0].path);
   });
+
+  it('can be iterated in depth-first, pre-order traversal fashion, with elements of the same depth being sorted alphabetically', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode (
+      { name: 'root', path: 'path/to/root', type: ElementType.Folder, children: [
+        { name: 'child', path: 'path/to/root/child', type: ElementType.File, children: [] },
+        { name: 'subDir', path: 'path/to/root/subDir', type: ElementType.Folder, children: [
+          { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
+        ]},
+        { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
+      ]}
+    );
+    const actualNames = [];
+
+    // when
+    treeNode.forEach((node) => actualNames.push(node.name));
+
+    // then
+    expect(actualNames).toEqual(['root', 'anotherChild', 'child', 'subDir', 'grandChild' ]);
+  });
+
 });
