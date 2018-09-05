@@ -8,7 +8,6 @@ export const NAVIGATION_RENAMED = 'navigation.renamed';
 export const NAVIGATION_OPEN = 'navigation.open';
 export const NAVIGATION_SELECT = 'navigation.select';
 
-export const WORKSPACE_OBSERVE = 'workspace.observe'; // ??
 export const WORKSPACE_RELOAD_RESPONSE = 'workspace.reload.response';
 
 // test execution was successfully started and is/should be running,
