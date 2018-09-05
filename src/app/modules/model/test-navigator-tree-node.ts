@@ -1,7 +1,8 @@
 import { TreeNode } from '@testeditor/testeditor-commons';
-import { WorkspaceElement, ElementType } from '../persistence-service/workspace-element';
+import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 
 export class TestNavigatorTreeNode implements TreeNode {
+  private static readonly hideCssClass = 'hidden';
   private static readonly folderCssClass = 'fas fa-folder';
   private static readonly unknownFileCssClass = 'fas fa-question';
   private static readonly extensionToCssClass = {
@@ -11,7 +12,8 @@ export class TestNavigatorTreeNode implements TreeNode {
   private _children: TestNavigatorTreeNode[];
   collapsedCssClasses = 'fas fa-chevron-right';
   expandedCssClasses = 'fas fa-chevron-down';
-  leafCssClasses: string;
+  leafCssClasses = '';
+  cssClasses = '';
 
   constructor(private workspaceElement: WorkspaceElement) {
     switch (workspaceElement.type) {
@@ -20,8 +22,30 @@ export class TestNavigatorTreeNode implements TreeNode {
     }
   }
 
+  show(showNotHide: boolean): void {
+    if (showNotHide) {
+      this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+    } else {
+      this.cssClasses = this.addToCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+    }
+  }
+
+  private removeFromCssClasses(cssClasses: string, classToRemove: string): string {
+    const cssClassesArray = cssClasses.trim().split(/\s+/);
+    return cssClassesArray.filter((cls) => cls !== classToRemove).join(' ');
+  }
+
+  private addToCssClasses(cssClasses: string, classToAdd: string): string {
+    const cssClassesArray = cssClasses.trim().split(/\s+/);
+    return cssClassesArray.includes(classToAdd) ? cssClasses : cssClassesArray.concat(classToAdd).join(' ');
+  }
+
   get name(): string {
     return this.workspaceElement.name;
+  }
+
+  get type(): ElementType {
+    return this.workspaceElement.type;
   }
 
   get hover(): string {
@@ -61,8 +85,24 @@ export class TestNavigatorTreeNode implements TreeNode {
     return cssClasses;
   }
 
-  forEach(callbackfn: (value: TestNavigatorTreeNode) => void) {
+  forEach(callbackfn: (value: TestNavigatorTreeNode) => void): TestNavigatorTreeNode {
     callbackfn(this);
     this.children.forEach((child) => (child as TestNavigatorTreeNode).forEach(callbackfn));
+    return this;
+  }
+
+  findFirst(condition: (element: TestNavigatorTreeNode) => boolean): TestNavigatorTreeNode {
+    let result: TestNavigatorTreeNode = null;
+    if (condition(this)) {
+      result = this;
+    } else {
+      for (const child of this.children) {
+        result = (child as TestNavigatorTreeNode).findFirst(condition);
+        if (result !== null) {
+          break;
+        }
+      }
+    }
+    return result;
   }
 }
