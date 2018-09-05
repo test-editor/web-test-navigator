@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MessagingService } from '@testeditor/messaging-service';
-import { HTTP_CLIENT_NEEDED, HTTP_CLIENT_SUPPLIED } from '../event-types';
+import { HTTP_CLIENT_SUPPLIED } from '../event-types-in';
+import { HTTP_CLIENT_NEEDED } from '../event-types-out';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/bindCallback';
 
