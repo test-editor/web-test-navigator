@@ -104,6 +104,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     return this.refreshClassValue !== '';
   }
 
+  collapseAll(): void {
+  }
+
   async refresh(): Promise<void> {
     if (!this.refreshRunning()) {
       this.refreshClassValue = 'fa-spin';
