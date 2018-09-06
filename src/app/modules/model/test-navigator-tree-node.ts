@@ -14,11 +14,15 @@ export class TestNavigatorTreeNode implements TreeNode {
   expandedCssClasses = 'fas fa-chevron-down';
   leafCssClasses = '';
   cssClasses = '';
+  expanded = undefined;
 
   constructor(private workspaceElement: WorkspaceElement) {
     switch (workspaceElement.type) {
       case ElementType.File: this.leafCssClasses = this.leafCssClassesForFile(workspaceElement.name); break;
-      case ElementType.Folder: this.leafCssClasses = TestNavigatorTreeNode.folderCssClass;
+      case ElementType.Folder: {
+        this.leafCssClasses = TestNavigatorTreeNode.folderCssClass;
+        this.expanded = false;
+      }
     }
   }
 
