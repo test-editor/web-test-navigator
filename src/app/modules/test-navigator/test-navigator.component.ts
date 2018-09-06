@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { TreeNode, TreeViewerConfig } from '@testeditor/testeditor-commons';
+import { testNavigatorFilter } from '../model/filters';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { PersistenceService } from '../persistence-service/persistence.service';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
-import { TreeViewerConfig, TreeNode } from '@testeditor/testeditor-commons';
 
 @Component({
   selector: 'app-test-navigator',
@@ -25,7 +25,8 @@ export class TestNavigatorComponent implements OnInit {
 
   async updateModel(): Promise<void> {
     console.log('retrieving test file tree...');
-    this.model = await this.filteredTreeService.listTestFiles();
+    this.model = (await this.filteredTreeService.listTreeNodes())
+      .forEach((node) => (node as TestNavigatorTreeNode).show(testNavigatorFilter(node)) );
   }
 
 }
