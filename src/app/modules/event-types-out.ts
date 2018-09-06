@@ -16,3 +16,7 @@ export const TEST_EXECUTION_STARTED = 'test.execution.started';
 // test execution could not be started,
 // payload { path: string, reason: any, message: string }
 export const TEST_EXECUTION_START_FAILED = 'test.execution.start.failed';
+
+
+export const WORKSPACE_RETRIEVED = 'workspace.retrieved';
+export const WORKSPACE_RETRIEVED_FAILED = 'workspace.retrieved.failed';

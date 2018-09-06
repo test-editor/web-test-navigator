@@ -5,6 +5,7 @@ export const HTTP_CLIENT_SUPPLIED = 'httpClient.supplied';
 export const EDITOR_ACTIVE = 'editor.active';
 export const EDITOR_CLOSE = 'editor.close';
 export const EDITOR_DIRTY_CHANGED = 'editor.dirtyStateChanged';
+export const EDITOR_SAVE_COMPLETED = 'editor.save.complete';
 
 export const WORKSPACE_RELOAD_REQUEST = 'workspace.reload.request';
 

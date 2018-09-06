@@ -37,7 +37,7 @@ export class TestNavigatorTreeNode implements TreeNode {
 
   private addToCssClasses(cssClasses: string, classToAdd: string): string {
     const cssClassesArray = cssClasses.trim().split(/\s+/);
-    return cssClassesArray.includes(classToAdd) ? cssClasses : cssClassesArray.concat(classToAdd).join(' ');
+    return cssClassesArray.find((element) => element === classToAdd) ? cssClasses : cssClassesArray.concat(classToAdd).join(' ');
   }
 
   get name(): string {
