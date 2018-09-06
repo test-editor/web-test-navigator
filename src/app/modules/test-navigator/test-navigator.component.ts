@@ -61,7 +61,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private async retryingListTreeNodes (retryCount: number): Promise<TestNavigatorTreeNode> {
     try {
       return (await this.filteredTreeService.listTreeNodes())
-      .forEach((node) => (node as TestNavigatorTreeNode).show(testNavigatorFilter(node)) );
+      .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)) );
       // this.updateValidationMarkers(root);
     } catch (error) {
       // TODO: prevent errors! keep connection to backend, as long as the list files service is running (in the backend) show the spinner!

@@ -22,7 +22,7 @@ export class TestNavigatorTreeNode implements TreeNode {
     }
   }
 
-  show(showNotHide: boolean): void {
+  setVisible(showNotHide: boolean): void {
     if (showNotHide) {
       this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
     } else {
