@@ -116,7 +116,7 @@ describe('TestNavigatorTreeNode', () => {
     const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
 
     // when
-    treeNode.show(false);
+    treeNode.setVisible(false);
 
     // then
     expect(treeNode.cssClasses).toContain('hidden');
@@ -128,8 +128,8 @@ describe('TestNavigatorTreeNode', () => {
     const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
 
     // when
-    treeNode.show(false);
-    treeNode.show(false);
+    treeNode.setVisible(false);
+    treeNode.setVisible(false);
 
     // then
     expect(treeNode.cssClasses.match(/hidden/g).length).toEqual(1);
@@ -142,7 +142,7 @@ describe('TestNavigatorTreeNode', () => {
     treeNode.cssClasses = 'aCssClass hidden anotherClass hidden';
 
     // when
-    treeNode.show(true);
+    treeNode.setVisible(true);
 
     // then
     expect(treeNode.cssClasses).not.toContain('hidden');
