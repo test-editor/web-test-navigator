@@ -16,6 +16,7 @@ import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 export class TestNavigatorComponent implements OnInit, OnDestroy {
   private readonly WORKSPACE_LOAD_RETRY_COUNT = 3;
   private fileSavedSubscription: Subscription;
+  public refreshClassValue  = '';
 
   model: TestNavigatorTreeNode;
   treeConfig: TreeViewerConfig = {
@@ -86,5 +87,32 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     // this.indexService.refresh().then(() => { this.updateModel(); });
   }
 
+  /** create a new element within the tree
+    */
+  newElement(type: string): void {
+    // this.workspace.newElement(type);
+    // this.changeDetectorRef.detectChanges();
+  }
+
+  /** controls availability of test execution button
+    */
+  selectionIsExecutable(): boolean {
+    return false;
+  }
+
+  refreshRunning(): boolean {
+    return this.refreshClassValue !== '';
+  }
+
+  collapseAll(): void {
+  }
+
+  async refresh(): Promise<void> {
+    if (!this.refreshRunning()) {
+      this.refreshClassValue = 'fa-spin';
+      await this.updateModel();
+      this.refreshClassValue = '';
+    }
+  }
 
 }

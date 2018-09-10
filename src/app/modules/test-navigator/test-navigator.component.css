@@ -1,0 +1,49 @@
+.sidenav {
+  flex-grow: 0;
+  height: 100%;
+  z-index: 1;
+  background-color: #252525;
+  resize: horizontal;
+  position: relative;
+}
+
+.test-nav-tree {
+  overflow-y: auto; /* vertical scroll bar should automatically appear */
+  overflow-x: hidden; /* since tree content is cut (ellipsis added), never show horizontal scrol bar */
+  height: calc(100% - 34px); /* -34 px occupied by the icon button bar! */
+}
+
+.icon-menu {
+  padding: 5px;
+}
+
+.icons-left {
+  float: left;
+}
+
+.icons-right {
+  text-align: right;
+}
+
+.icon {
+  color: #CCCCCC;
+  cursor: pointer;
+}
+
+.icon:hover:enabled {
+  color: #ffffff;
+}
+
+.icon:hover:disabled {
+  cursor: auto;
+}
+
+.icon:disabled {
+  color: #555555;
+}
+
+button {
+  background:none!important;
+  border:none;
+  padding:0!important;
+}

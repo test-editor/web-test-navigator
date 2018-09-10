@@ -1,1 +1,16 @@
-<app-tree-viewer [model]="model" [level]="0" [config]="treeConfig"></app-tree-viewer>
+<div class="sidenav">
+  <div class="icon-menu">
+    <div class="icons-left">
+      <button id="new-file" class="icon fa fa-file" (click)="newElement('file')" title="create new file"></button>
+      <button id="new-folder" class="icon fa fa-folder" (click)="newElement('folder')" title="create new folder"></button>
+      <button id="run" class="icon fa fa-play" (click)="run()" [disabled]="!selectionIsExecutable()" title="execute test"></button>
+    </div>
+    <div class="icons-right">
+      <button id="refresh" [className]="'icon fa fa-refresh '+refreshClassValue" [disabled]="refreshRunning()" aria-hidden="true" (click)="refresh()" title="refresh workspace"></button>
+      <button id="collapse-all" class="icon fa fa-minus-square-o" aria-hidden="true" (click)="collapseAll()" title="collapse all"></button>
+    </div>
+  </div>
+  <div class="test-nav-tree">
+    <app-tree-viewer [model]="model" [level]="0" [config]="treeConfig"></app-tree-viewer>
+  </div>
+</div>
