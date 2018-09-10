@@ -13,5 +13,5 @@
   <div class="test-nav-tree">
     <app-tree-viewer [model]="model" [level]="0" [config]="treeConfig"></app-tree-viewer>
   </div>
-  <app-filter-bar></app-filter-bar>
+  <app-filter-bar (filtersChanged)="onFiltersChanged($event)"></app-filter-bar>
 </div>

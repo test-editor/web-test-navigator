@@ -7,14 +7,16 @@ import { PersistenceService } from './modules/persistence-service/persistence.se
 import { PersistenceServiceConfig } from './modules/persistence-service/persistence.service.config';
 import { TreeViewerModule } from '@testeditor/testeditor-commons';
 import { TreeFilterService } from './modules/tree-filter-service/tree-filter.service';
+import { FormsModule } from '@angular/forms';
+import { ButtonsModule } from 'ngx-bootstrap/buttons';
+import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
 describe('AppComponent', () => {
   beforeEach(async(() => {
     const persistenceServiceConfig: PersistenceServiceConfig = { persistenceServiceUrl: 'http://example.org' };
     TestBed.configureTestingModule({
-      imports: [ MessagingModule.forRoot(), TreeViewerModule ],
+      imports: [ MessagingModule.forRoot(), TreeViewerModule, FormsModule, ButtonsModule.forRoot() ],
       declarations: [
-        AppComponent,
-        TestNavigatorComponent
+        AppComponent, TestNavigatorComponent, FilterBarComponent
       ],
       providers: [ HttpProviderService, TreeFilterService, PersistenceService,
         { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig } ]
