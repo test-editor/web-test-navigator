@@ -22,7 +22,7 @@ class TestHostComponent {
 
 
 
-fdescribe('FilterBarComponent', () => {
+describe('FilterBarComponent', () => {
   let hostComponent: TestHostComponent;
   let fixture: ComponentFixture<TestHostComponent>;
 
