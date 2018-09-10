@@ -1,1 +1,4 @@
 /* You can add global styles to this file, and also import other style files */
+.tsl-file-color { color: lightgreen }
+.tcl-file-color { color: lightblue }
+.aml-file-color { color: lightcoral }
