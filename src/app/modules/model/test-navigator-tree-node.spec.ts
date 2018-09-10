@@ -17,10 +17,11 @@ describe('TestNavigatorTreeNode', () => {
     };
 
     // when
-    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree, null);
+    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree);
 
     // then
     expect(actualTreeNode.collapsedCssClasses).toEqual('fas fa-chevron-right');
+    expect(actualTreeNode.root).toEqual(actualTreeNode);
     expect(actualTreeNode.children.length).toEqual(0);
     expect(actualTreeNode.expandedCssClasses).toEqual('fas fa-chevron-down');
     expect(actualTreeNode.hover).toEqual(workspaceTree.name);
@@ -44,13 +45,14 @@ describe('TestNavigatorTreeNode', () => {
     };
 
     // when
-    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree, null);
+    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree);
 
     // then
     expect(actualTreeNode.children).toBeTruthy();
     expect(actualTreeNode.children.length).toEqual(1);
     expect(actualTreeNode.children[0].name).toEqual(workspaceTree.children[0].name);
     expect(actualTreeNode.children[0].id).toEqual(workspaceTree.children[0].path);
+    expect(actualTreeNode.children[0].root).toEqual(actualTreeNode);
   });
 
   it('can be iterated in depth-first, pre-order traversal fashion, with elements of the same depth being sorted alphabetically', () => {
@@ -114,7 +116,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('adds the "hidden" css class when calling show(false)', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []}, null);
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
 
     // when
     treeNode.setVisible(false);
@@ -126,7 +128,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('does not add the "hidden" css class more than once when repeatedly calling show(false)', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []}, null);
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
 
     // when
     treeNode.setVisible(false);
@@ -139,7 +141,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('removes (all occurences of) the "hidden" css class when calling show(true)', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []}, null);
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
     treeNode.cssClasses = 'aCssClass hidden anotherClass hidden';
 
     // when
@@ -153,7 +155,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('returns an empty array when retrieving children, if the backing workspace element has none', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: undefined}, null);
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: undefined});
 
     // when
     const actualChildren = treeNode.children;

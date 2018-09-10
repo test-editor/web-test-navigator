@@ -17,7 +17,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   expanded = undefined;
   public  root: TestNavigatorTreeNode;
 
-  constructor(private workspaceElement: WorkspaceElement, root: TestNavigatorTreeNode) {
+  constructor(private workspaceElement: WorkspaceElement, root?: TestNavigatorTreeNode) {
     switch (workspaceElement.type) {
       case ElementType.File: this.leafCssClasses = this.leafCssClassesForFile(workspaceElement.name); break;
       case ElementType.Folder: {
@@ -25,7 +25,11 @@ export class TestNavigatorTreeNode implements TreeNode {
         this.expanded = false;
       }
     }
-    this.root = root;
+    if (root === undefined) {
+      this.root = this;
+    } else {
+      this.root = root;
+    }
   }
 
   setVisible(showNotHide: boolean): void {

@@ -11,8 +11,7 @@ export class TreeFilterService {
   async listTreeNodes(): Promise<TestNavigatorTreeNode> {
     return this.persistenceService.listFiles().then(
       (root) => {
-        const testNavigatorRoot = new TestNavigatorTreeNode(root, null); // root is not initialized yet
-        testNavigatorRoot.root = testNavigatorRoot;
+        const testNavigatorRoot = new TestNavigatorTreeNode(root);
         return testNavigatorRoot.findFirst((node) => (node as TestNavigatorTreeNode).id === TreeFilterService.ROOT_PATH);
       });
   }
