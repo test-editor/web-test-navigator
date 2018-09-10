@@ -3,7 +3,8 @@ import { TestNavigatorTreeNode } from './test-navigator-tree-node';
 
 describe('TestNavigatorTreeNode', () => {
   it('should create an instance', () => {
-    expect(new TestNavigatorTreeNode({name: 'anElement', path: 'path/to/anElement', type: ElementType.File, children: []})).toBeTruthy();
+    expect(new TestNavigatorTreeNode(
+      {name: 'anElement', path: 'path/to/anElement', type: ElementType.File, children: []}, null)).toBeTruthy();
   });
 
   it('should properly fill TestNavigatorTreeNode fields', () => {
@@ -20,6 +21,7 @@ describe('TestNavigatorTreeNode', () => {
 
     // then
     expect(actualTreeNode.collapsedCssClasses).toEqual('fas fa-chevron-right');
+    expect(actualTreeNode.root).toEqual(actualTreeNode);
     expect(actualTreeNode.children.length).toEqual(0);
     expect(actualTreeNode.expandedCssClasses).toEqual('fas fa-chevron-down');
     expect(actualTreeNode.hover).toEqual(workspaceTree.name);
@@ -50,6 +52,7 @@ describe('TestNavigatorTreeNode', () => {
     expect(actualTreeNode.children.length).toEqual(1);
     expect(actualTreeNode.children[0].name).toEqual(workspaceTree.children[0].name);
     expect(actualTreeNode.children[0].id).toEqual(workspaceTree.children[0].path);
+    expect(actualTreeNode.children[0].root).toEqual(actualTreeNode);
   });
 
   it('can be iterated in depth-first, pre-order traversal fashion, with elements of the same depth being sorted alphabetically', () => {
@@ -61,7 +64,7 @@ describe('TestNavigatorTreeNode', () => {
           { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
         ]},
         { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
-      ]}
+      ]}, null
     );
     const actualNames = [];
 
@@ -81,7 +84,7 @@ describe('TestNavigatorTreeNode', () => {
           { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
         ]},
         { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
-      ]}
+      ]}, null
     );
 
     // when
@@ -101,7 +104,7 @@ describe('TestNavigatorTreeNode', () => {
           { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
         ]},
         { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
-      ]}
+      ]}, null
     );
 
     // when

@@ -9,10 +9,11 @@ export class TreeFilterService {
   constructor(private persistenceService: PersistenceService) { }
 
   async listTreeNodes(): Promise<TestNavigatorTreeNode> {
-    return this.persistenceService.listFiles().then((root) =>
-      new TestNavigatorTreeNode(root)
-      .findFirst((node) => (node as TestNavigatorTreeNode).id === TreeFilterService.ROOT_PATH)
-    );
+    return this.persistenceService.listFiles().then(
+      (root) => {
+        const testNavigatorRoot = new TestNavigatorTreeNode(root);
+        return testNavigatorRoot.findFirst((node) => (node as TestNavigatorTreeNode).id === TreeFilterService.ROOT_PATH);
+      });
   }
 
 
