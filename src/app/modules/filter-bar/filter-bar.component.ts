@@ -6,6 +6,7 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./filter-bar.component.css']
 })
 export class FilterBarComponent implements OnInit {
+  filters = { tsl: false, tcl: false, aml: false };
 
   constructor() { }
 

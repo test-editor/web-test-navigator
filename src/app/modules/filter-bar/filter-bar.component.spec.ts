@@ -1,13 +1,15 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { FormsModule } from '@angular/forms';
+import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { FilterBarComponent } from './filter-bar.component';
 
-describe('FilterBarComponent', () => {
+fdescribe('FilterBarComponent', () => {
   let component: FilterBarComponent;
   let fixture: ComponentFixture<FilterBarComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
+      imports: [ FormsModule, ButtonsModule.forRoot() ],
       declarations: [ FilterBarComponent ]
     })
     .compileComponents();

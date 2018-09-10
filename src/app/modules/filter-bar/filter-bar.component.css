@@ -1,0 +1,19 @@
+.tsl {
+  color: lightgreen
+}
+
+.tcl {
+  color: lightblue
+}
+
+.aml {
+  color: lightcoral
+}
+
+#filter-bar {
+  display: flex;
+}
+
+#filter-bar > label {
+  flex-grow: 1;
+}
