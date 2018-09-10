@@ -3,7 +3,8 @@ import { TestNavigatorTreeNode } from './test-navigator-tree-node';
 
 describe('TestNavigatorTreeNode', () => {
   it('should create an instance', () => {
-    expect(new TestNavigatorTreeNode({name: 'anElement', path: 'path/to/anElement', type: ElementType.File, children: []})).toBeTruthy();
+    expect(new TestNavigatorTreeNode(
+      {name: 'anElement', path: 'path/to/anElement', type: ElementType.File, children: []}, null)).toBeTruthy();
   });
 
   it('should properly fill TestNavigatorTreeNode fields', () => {
@@ -16,7 +17,7 @@ describe('TestNavigatorTreeNode', () => {
     };
 
     // when
-    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree);
+    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree, null);
 
     // then
     expect(actualTreeNode.collapsedCssClasses).toEqual('fas fa-chevron-right');
@@ -43,7 +44,7 @@ describe('TestNavigatorTreeNode', () => {
     };
 
     // when
-    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree);
+    const actualTreeNode = new TestNavigatorTreeNode(workspaceTree, null);
 
     // then
     expect(actualTreeNode.children).toBeTruthy();
@@ -61,7 +62,7 @@ describe('TestNavigatorTreeNode', () => {
           { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
         ]},
         { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
-      ]}
+      ]}, null
     );
     const actualNames = [];
 
@@ -81,7 +82,7 @@ describe('TestNavigatorTreeNode', () => {
           { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
         ]},
         { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
-      ]}
+      ]}, null
     );
 
     // when
@@ -101,7 +102,7 @@ describe('TestNavigatorTreeNode', () => {
           { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
         ]},
         { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
-      ]}
+      ]}, null
     );
 
     // when
@@ -113,7 +114,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('adds the "hidden" css class when calling show(false)', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []}, null);
 
     // when
     treeNode.setVisible(false);
@@ -125,7 +126,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('does not add the "hidden" css class more than once when repeatedly calling show(false)', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []}, null);
 
     // when
     treeNode.setVisible(false);
@@ -138,7 +139,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('removes (all occurences of) the "hidden" css class when calling show(true)', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []});
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: []}, null);
     treeNode.cssClasses = 'aCssClass hidden anotherClass hidden';
 
     // when
@@ -152,7 +153,7 @@ describe('TestNavigatorTreeNode', () => {
 
   it('returns an empty array when retrieving children, if the backing workspace element has none', () => {
     // given
-    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: undefined});
+    const treeNode = new TestNavigatorTreeNode({ name: 'root', path: 'path/to/root', type: ElementType.Folder, children: undefined}, null);
 
     // when
     const actualChildren = treeNode.children;

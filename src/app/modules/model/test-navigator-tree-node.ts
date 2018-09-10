@@ -15,8 +15,9 @@ export class TestNavigatorTreeNode implements TreeNode {
   leafCssClasses = '';
   cssClasses = '';
   expanded = undefined;
+  public  root: TestNavigatorTreeNode;
 
-  constructor(private workspaceElement: WorkspaceElement) {
+  constructor(private workspaceElement: WorkspaceElement, root: TestNavigatorTreeNode) {
     switch (workspaceElement.type) {
       case ElementType.File: this.leafCssClasses = this.leafCssClassesForFile(workspaceElement.name); break;
       case ElementType.Folder: {
@@ -24,6 +25,7 @@ export class TestNavigatorTreeNode implements TreeNode {
         this.expanded = false;
       }
     }
+    this.root = root;
   }
 
   setVisible(showNotHide: boolean): void {
@@ -63,7 +65,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   get children(): TreeNode[] {
     if (!this._children) {
       if (this.workspaceElement.children) {
-        this._children = this.workspaceElement.children.map((element) => new TestNavigatorTreeNode(element))
+        this._children = this.workspaceElement.children.map((element) => new TestNavigatorTreeNode(element, this.root))
           .sort((nodeA, nodeB) => {
             return nodeA.name.localeCompare(nodeB.name);
           });
