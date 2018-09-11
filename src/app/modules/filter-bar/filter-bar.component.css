@@ -1,15 +1,3 @@
-.tsl {
-  color: lightgreen
-}
-
-.tcl {
-  color: lightblue
-}
-
-.aml {
-  color: lightcoral
-}
-
 #filter-bar {
   display: flex;
 }

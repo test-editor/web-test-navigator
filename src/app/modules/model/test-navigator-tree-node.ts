@@ -6,8 +6,10 @@ export class TestNavigatorTreeNode implements TreeNode {
   private static readonly folderCssClass = 'fas fa-folder';
   private static readonly unknownFileCssClass = 'fas fa-question';
   private static readonly extensionToCssClass = {
-    'bmp': 'fas fas fa-image', 'png': 'fas fa-image', 'jpg': 'fas fa-image', 'jpeg': 'fas fa-image', 'gif': 'fas fa-image',
-    'svg': 'fas fa-image', 'tsl': 'fas fa-file', 'tcl': 'fas fa-file', 'tml': 'fas fa-file', 'config': 'fas fa-file', 'aml': 'fas fa-file'};
+    'bmp': 'fas fas fa-image', 'png': 'fas fa-image', 'jpg': 'fas fa-image',
+    'jpeg': 'fas fa-image', 'gif': 'fas fa-image', 'svg': 'fas fa-image',
+    'tsl': 'fas fa-file tsl-file-color', 'tcl': 'fas fa-file tcl-file-color', 'tml': 'fas fa-file tcl-file-color',
+    'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color'};
 
   private _children: TestNavigatorTreeNode[];
   collapsedCssClasses = 'fas fa-chevron-right';
