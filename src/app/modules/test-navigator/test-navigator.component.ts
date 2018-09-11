@@ -1,13 +1,14 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { TreeNode, TreeViewerConfig } from '@testeditor/testeditor-commons';
 import { testNavigatorFilter, filterFor } from '../model/filters';
+import { TreeNode, TreeViewerConfig, TREE_NODE_SELECTED, TREE_NODE_DESELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_SAVE_COMPLETED } from '../event-types-in';
-import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
+import { EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_EXECUTE_REQUEST, NAVIGATION_OPEN } from '../event-types-out';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilterState } from '../filter-bar/filter-bar.component';
+import { ElementType } from '../../../../public_api';
 
 @Component({
   selector: 'app-test-navigator',
@@ -15,14 +16,29 @@ import { FilterState } from '../filter-bar/filter-bar.component';
   styleUrls: ['./test-navigator.component.css']
 })
 export class TestNavigatorComponent implements OnInit, OnDestroy {
+  static readonly NOTIFICATION_TIMEOUT_MILLIS = 4000;
   private readonly WORKSPACE_LOAD_RETRY_COUNT = 3;
   private fileSavedSubscription: Subscription;
   public refreshClassValue  = '';
+  private tclCurrentlySelected: TestNavigatorTreeNode = null;
+  private treeSelectionChangeSubscription: Subscription;
+  private treeDeselectionChangeSubscription: Subscription;
+  private testExecutionSubscription: Subscription;
+  private testExecutionFailedSubscription: Subscription;
+  errorMessage: string;
+  notification: string;
 
   model: TestNavigatorTreeNode;
   treeConfig: TreeViewerConfig = {
     onClick: () => null,
-    onDoubleClick: (node: TreeNode) => node.expanded = !node.expanded,
+    onDoubleClick: (node: TreeNode) => {
+      const testNavNode = (node as TestNavigatorTreeNode);
+      if (testNavNode.type === ElementType.Folder) {
+        node.expanded = !node.expanded;
+      } else {
+        this.messagingService.publish(NAVIGATION_OPEN, node);
+      }
+    },
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded
   };
 
@@ -31,10 +47,35 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.updateModel();
     this.setupRepoChangeListeners();
+    this.setupTreeSelectionChangeListener();
+    this.setupTestExecutionListener();
   }
 
   ngOnDestroy(): void {
     this.fileSavedSubscription.unsubscribe();
+    this.treeDeselectionChangeSubscription.unsubscribe();
+    this.treeSelectionChangeSubscription.unsubscribe();
+  }
+
+  private setupTestExecutionListener(): void {
+    this.testExecutionSubscription = this.messagingService.subscribe(TEST_EXECUTION_STARTED, payload => {
+      this.showNotification(payload.message, payload.path);
+    });
+    this.testExecutionFailedSubscription = this.messagingService.subscribe(TEST_EXECUTION_START_FAILED, payload => {
+      this.showErrorMessage(payload.message, payload.path);
+    });
+  }
+
+  private setupTreeSelectionChangeListener() {
+    this.treeSelectionChangeSubscription = this.messagingService.subscribe(TREE_NODE_SELECTED, (node) => {
+      this.select(node);
+    });
+
+    this.treeDeselectionChangeSubscription = this.messagingService.subscribe(TREE_NODE_DESELECTED, (node) => {
+      if (node === this.tclCurrentlySelected) {
+        this.tclCurrentlySelected = null;
+      }
+    });
   }
 
   async updateModel(): Promise<void> {
@@ -102,7 +143,17 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   /** controls availability of test execution button
     */
   selectionIsExecutable(): boolean {
-    return false;
+    return this.tclCurrentlySelected != null;
+  }
+
+  select(node: TestNavigatorTreeNode) {
+    if (node.root === this.model) {
+      if (node.id.toUpperCase().endsWith('.TCL')) {
+        this.tclCurrentlySelected = node;
+      } else {
+        this.tclCurrentlySelected = null;
+      }
+    }
   }
 
   refreshRunning(): boolean {
@@ -118,6 +169,30 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       await this.updateModel();
       this.refreshClassValue = '';
     }
+  }
+
+  run(): void {
+    if (this.selectionIsExecutable()) {
+      this.messagingService.publish(TEST_EXECUTE_REQUEST, this.tclCurrentlySelected.id);
+    } else {
+      console.log('WARNING: trying to execute test, but no test case file is selected.');
+    }
+  }
+
+  hideNotification(): void {
+    this.notification = null;
+  }
+
+  showNotification(notification: string, path: string): void {
+    this.notification = notification.replace('\${}', path);
+    setTimeout(() => { this.hideNotification(); }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
+  }
+
+  showErrorMessage(errorMessage: string, path: string): void {
+    this.errorMessage = errorMessage.replace('\${}', path);
+        setTimeout(() => {
+          this.errorMessage = null;
+        }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
   }
 
 }

@@ -13,5 +13,7 @@
   <div class="test-nav-tree">
     <app-tree-viewer [model]="model" [level]="0" [config]="treeConfig"></app-tree-viewer>
   </div>
+  <div *ngIf="errorMessage" id="errorMessage" class="alert alert-danger">{{errorMessage}}</div>
+  <div *ngIf="notification" id="notification" class="alert alert-info">{{notification}}</div>
   <app-filter-bar (filtersChanged)="onFiltersChanged($event)"></app-filter-bar>
 </div>

@@ -47,3 +47,9 @@ button {
   border:none;
   padding:0!important;
 }
+
+.sidenav .alert {
+  position: absolute;
+  bottom: 0;
+  width: inherit;
+}
