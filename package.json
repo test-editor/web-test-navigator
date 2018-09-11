@@ -25,10 +25,10 @@
   },
   "scripts": {
     "clean": "rimraf out-tsc dist/*",
-    "upgradeTesteditorOrgDependencies": "yarn upgrade @testeditor",
+    "upgradeTesteditorOrgDependencies": "yarn upgrade -S @testeditor",
     "ng": "ng",
     "prestart": "yarn run upgradeTesteditorOrgDependencies",
-    "start": "ng serve",
+    "start": "ng serve -H 0.0.0.0 --preserve-symlinks",
     "prebuild": "yarn run upgradeTesteditorOrgDependencies && yarn run clean && yarn run lint",
     "build": "ng build",
     "pretest": "yarn run upgradeTesteditorOrgDependencies",

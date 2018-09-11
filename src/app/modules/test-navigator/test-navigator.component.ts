@@ -37,6 +37,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         node.expanded = !node.expanded;
       } else {
         this.messagingService.publish(NAVIGATION_OPEN, node);
+        this.log('published NAVIGATION_OPEN', node);
       }
     },
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded
@@ -59,19 +60,23 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   private setupTestExecutionListener(): void {
     this.testExecutionSubscription = this.messagingService.subscribe(TEST_EXECUTION_STARTED, payload => {
+      this.log('received TEST_EXECUTION_STARTED', payload);
       this.showNotification(payload.message, payload.path);
     });
     this.testExecutionFailedSubscription = this.messagingService.subscribe(TEST_EXECUTION_START_FAILED, payload => {
+      this.log('received TEST_EXECUTION_START_FAILED', payload);
       this.showErrorMessage(payload.message, payload.path);
     });
   }
 
   private setupTreeSelectionChangeListener() {
     this.treeSelectionChangeSubscription = this.messagingService.subscribe(TREE_NODE_SELECTED, (node) => {
+      this.log('received TREE_NODE_SELECTED', node);
       this.select(node);
     });
 
     this.treeDeselectionChangeSubscription = this.messagingService.subscribe(TREE_NODE_DESELECTED, (node) => {
+      this.log('received TREE_NODE_DESELECTED', node);
       if (node === this.tclCurrentlySelected) {
         this.tclCurrentlySelected = null;
       }
@@ -79,7 +84,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   async updateModel(): Promise<void> {
-    console.log('retrieving test file tree...');
+    this.log('retrieving test file tree...');
     try {
       this.model = await this.retryingListTreeNodes(this.WORKSPACE_LOAD_RETRY_COUNT);
       this.messagingService.publish(WORKSPACE_RETRIEVED, this.model.name);
@@ -116,7 +121,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       // TODO: prevent errors! keep connection to backend, as long as the list files service is running (in the backend) show the spinner!
       if (retryCount > 0) {
         if (isDevMode()) {
-          console.log('retry (re)load of workspace after failure');
+          this.log('retry (re)load of workspace after failure');
         }
         return this.retryingListTreeNodes(retryCount - 1);
       } else {
@@ -147,7 +152,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   select(node: TestNavigatorTreeNode) {
-    if (node.root === this.model) {
+    if (node.root === this.model.root) {
       if (node.id.toUpperCase().endsWith('.TCL')) {
         this.tclCurrentlySelected = node;
       } else {
@@ -175,7 +180,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     if (this.selectionIsExecutable()) {
       this.messagingService.publish(TEST_EXECUTE_REQUEST, this.tclCurrentlySelected.id);
     } else {
-      console.log('WARNING: trying to execute test, but no test case file is selected.');
+      this.log('WARNING: trying to execute test, but no test case file is selected.');
     }
   }
 
@@ -193,6 +198,15 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         setTimeout(() => {
           this.errorMessage = null;
         }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
+  }
+
+  private log(msg: String, payload?) {
+    if (isDevMode()) {
+      console.log('TestNavigatorComponent: ' + msg);
+      if (payload !== undefined) {
+        console.log(payload);
+      }
+    }
   }
 
 }
