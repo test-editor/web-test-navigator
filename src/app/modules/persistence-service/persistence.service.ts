@@ -30,8 +30,6 @@ export class PersistenceService extends AbstractPersistenceService {
   private serviceUrl: string;
   private listFilesUrl: string;
 
-  private cachedHttpClient: HttpClient;
-
   constructor(config: PersistenceServiceConfig, private httpProvider: HttpProviderService) {
     super();
     this.serviceUrl = config.persistenceServiceUrl;

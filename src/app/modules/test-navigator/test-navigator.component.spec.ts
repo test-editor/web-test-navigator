@@ -14,7 +14,7 @@ import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { ElementType } from '../persistence-service/workspace-element';
 import { By } from '@angular/platform-browser';
 import { DebugElement } from '@angular/core';
-import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-out';
+import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
