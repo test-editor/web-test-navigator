@@ -10,13 +10,9 @@ export const NAVIGATION_SELECT = 'navigation.select';
 
 export const WORKSPACE_RELOAD_RESPONSE = 'workspace.reload.response';
 
-// test execution was successfully started and is/should be running,
-// payload is { response: Response, path: string, message: string }
-export const TEST_EXECUTION_STARTED = 'test.execution.started';
-// test execution could not be started,
-// payload { path: string, reason: any, message: string }
-export const TEST_EXECUTION_START_FAILED = 'test.execution.start.failed';
-
-
 export const WORKSPACE_RETRIEVED = 'workspace.retrieved';
 export const WORKSPACE_RETRIEVED_FAILED = 'workspace.retrieved.failed';
+
+// request execution of a test case,
+// payload is the absolute path of the respective tcl
+export const TEST_EXECUTE_REQUEST = 'test.execute.request';
