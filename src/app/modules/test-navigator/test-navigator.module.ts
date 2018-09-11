@@ -1,18 +1,22 @@
-import { NgModule, ModuleWithProviders } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TestNavigatorComponent } from './test-navigator.component';
-import { PersistenceService } from '../persistence-service/persistence.service';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { ModuleWithProviders, NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { TreeViewerModule } from '@testeditor/testeditor-commons';
+import { ButtonsModule } from 'ngx-bootstrap/buttons';
+import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { PersistenceService } from '../persistence-service/persistence.service';
 import { PersistenceServiceConfig } from '../persistence-service/persistence.service.config';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+import { TestNavigatorComponent } from './test-navigator.component';
+import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 
 @NgModule({
   imports: [
-    CommonModule, TreeViewerModule
+    CommonModule, TreeViewerModule, FormsModule, ButtonsModule.forRoot()
   ],
   declarations: [
-    TestNavigatorComponent
+    TestNavigatorComponent,
+    FilterBarComponent
   ],
   exports: [
     TestNavigatorComponent

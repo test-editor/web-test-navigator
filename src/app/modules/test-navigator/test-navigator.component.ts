@@ -1,12 +1,13 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { TreeNode, TreeViewerConfig } from '@testeditor/testeditor-commons';
-import { testNavigatorFilter } from '../model/filters';
+import { testNavigatorFilter, filterFor } from '../model/filters';
 import { Subscription } from 'rxjs/Subscription';
 import { EDITOR_SAVE_COMPLETED } from '../event-types-in';
 import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+import { FilterState } from '../filter-bar/filter-bar.component';
 
 @Component({
   selector: 'app-test-navigator',
@@ -47,6 +48,10 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         console.error('failed to load workspace');
       }
     }
+  }
+
+  onFiltersChanged(state: FilterState) {
+    this.model.forEach((node) => (node as TestNavigatorTreeNode).setVisible(filterFor(state, node)));
   }
 
 /**
