@@ -4,10 +4,11 @@ import { testNavigatorFilter, filterFor } from '../model/filters';
 import { TreeNode, TreeViewerConfig, TREE_NODE_SELECTED, TREE_NODE_DESELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
-import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_EXECUTE_REQUEST } from '../event-types-out';
+import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_EXECUTE_REQUEST, NAVIGATION_OPEN } from '../event-types-out';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilterState } from '../filter-bar/filter-bar.component';
+import { ElementType } from '../../../../public_api';
 
 @Component({
   selector: 'app-test-navigator',
@@ -30,7 +31,14 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   model: TestNavigatorTreeNode;
   treeConfig: TreeViewerConfig = {
     onClick: () => null,
-    onDoubleClick: (node: TreeNode) => node.expanded = !node.expanded,
+    onDoubleClick: (node: TreeNode) => {
+      const testNavNode = (node as TestNavigatorTreeNode);
+      if (testNavNode.type === ElementType.Folder) {
+        node.expanded = !node.expanded;
+      } else {
+        this.messagingService.publish(NAVIGATION_OPEN, node);
+      }
+    },
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded
   };
 
@@ -139,8 +147,12 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   select(node: TestNavigatorTreeNode) {
-    if ((node.root === this.model) && (node.id.endsWith('.tcl'))) {
-      this.tclCurrentlySelected = node;
+    if (node.root === this.model) {
+      if (node.id.toUpperCase().endsWith('.TCL')) {
+        this.tclCurrentlySelected = node;
+      } else {
+        this.tclCurrentlySelected = null;
+      }
     }
   }
 
