@@ -8,7 +8,7 @@ import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_EXECUTE_REQUEST, 
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilterState } from '../filter-bar/filter-bar.component';
-import { ElementType } from '../../../../public_api';
+import { ElementType } from '../persistence-service/workspace-element';
 
 @Component({
   selector: 'app-test-navigator',
