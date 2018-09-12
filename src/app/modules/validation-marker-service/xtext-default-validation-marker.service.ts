@@ -3,25 +3,28 @@ import { ValidationMarkerService, ValidationSummary } from './validation-marker.
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { XtextValidationMarkerServiceConfig } from './xtext-validation-marker.service.config';
 import { HttpClient } from '@angular/common/http';
+import { HttpProviderService } from '../http-provider-service/http-provider.service';
 
 @Injectable()
 export class XtextDefaultValidationMarkerService extends ValidationMarkerService {
 
   private serviceUrl: string;
 
-  constructor(private http: HttpClient, config: XtextValidationMarkerServiceConfig) {
+  constructor(private httpProvider: HttpProviderService, config: XtextValidationMarkerServiceConfig) {
     super();
     this.serviceUrl = config.serviceUrl;
   }
 
-  getAllMarkerSummaries(workspaceRoot: WorkspaceElement): Promise<ValidationSummary[]> {
-    return this.http.get<ValidationSummary[]>(this.serviceUrl).toPromise()
-      .then((leafSummaries: ValidationSummary[]) => {
-        const summaryMap = this.mapSummariesByPath(leafSummaries);
-        this.recurseAndAggregateValidationSummaries(workspaceRoot, summaryMap);
-        return Array.from(summaryMap.values());
-      },
-      reject => []);
+  public async getAllMarkerSummaries(workspaceRoot: WorkspaceElement): Promise<ValidationSummary[]> {
+    try {
+      const http = await this.httpProvider.getHttpClient();
+      const leafSummaries = await http.get<ValidationSummary[]>(this.serviceUrl).toPromise();
+      const summaryMap = this.mapSummariesByPath(leafSummaries);
+      this.recurseAndAggregateValidationSummaries(workspaceRoot, summaryMap);
+      return Array.from(summaryMap.values());
+    } catch (error) {
+      return [];
+    }
   }
 
   private mapSummariesByPath(summaries: ValidationSummary[]): Map<string, ValidationSummary> {

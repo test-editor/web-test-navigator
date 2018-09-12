@@ -1,10 +1,12 @@
-import { async, TestBed, inject } from '@angular/core/testing';
+import { async, TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
 import { XtextValidationMarkerServiceConfig } from './xtext-validation-marker.service.config';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { XtextDefaultValidationMarkerService } from './xtext-default-validation-marker.service';
+import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 
 const firstChild: WorkspaceElement = {
   name: 'firstChild',
@@ -71,23 +73,33 @@ const expectedValidationMarkersForSampleResponse = [
 
 describe('ValidationMarkerService', () => {
   let serviceConfig: XtextValidationMarkerServiceConfig;
+  let messagingService: MessagingService;
+  let httpClient: HttpClient;
 
   beforeEach(() => {
     serviceConfig = new XtextValidationMarkerServiceConfig();
     serviceConfig.serviceUrl = '';
 
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule, HttpClientModule],
+      imports: [HttpClientTestingModule, HttpClientModule, MessagingModule.forRoot()],
       providers: [
         { provide: XtextValidationMarkerServiceConfig, useValue: serviceConfig },
         { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
-        HttpClient
+        HttpClient,
+        HttpProviderService
       ]
+    });
+    messagingService = TestBed.get(MessagingService);
+    httpClient = TestBed.get(HttpClient);
+
+    const subscription = messagingService.subscribe('httpClient.needed', () => {
+      subscription.unsubscribe();
+      messagingService.publish('httpClient.supplied', { httpClient: httpClient });
     });
   });
 
   // this test should be rewritten, too, I guess, since checking is done for all files
-  it('retrieves markers for single file', async(inject([HttpTestingController, ValidationMarkerService],
+  it('retrieves markers for single file', fakeAsync(inject([HttpTestingController, ValidationMarkerService],
     (httpMock: HttpTestingController, validationMarkerService: ValidationMarkerService) => {
       // given
       const sampleFile: WorkspaceElement = { path: 'sample/path/file.txt', name: 'file.txt', children: [], type: ElementType.File };
@@ -107,6 +119,7 @@ describe('ValidationMarkerService', () => {
           expect(summaries[7].warnings).toEqual(0);
           expect(summaries[7].infos).toEqual(0);
         });
+      tick();
 
       httpMock.match(allMarkerSummariesRequest)[0].flush(expectedValidationMarkersForSampleResponse);
     })));
