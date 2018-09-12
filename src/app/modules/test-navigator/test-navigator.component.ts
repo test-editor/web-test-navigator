@@ -138,22 +138,20 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     // this.indexService.refresh().then(() => { this.updateModel(); });
   }
 
-  /** create a new element within the tree
-    */
+  /** create a new element within the tree */
   newElement(type: string): void {
     // this.workspace.newElement(type);
     // this.changeDetectorRef.detectChanges();
   }
 
-  /** controls availability of test execution button
-    */
+  /** controls availability of test execution button */
   selectionIsExecutable(): boolean {
     return this.tclCurrentlySelected != null;
   }
 
   select(node: TestNavigatorTreeNode) {
-    if (node.root === this.model.root) {
-      if (node.id.toUpperCase().endsWith('.TCL')) {
+    if (this.model.sameTree(node)) {
+      if (node.isTclFile()) {
         this.tclCurrentlySelected = node;
       } else {
         this.tclCurrentlySelected = null;

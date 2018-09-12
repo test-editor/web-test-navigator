@@ -117,4 +117,16 @@ export class TestNavigatorTreeNode implements TreeNode {
     }
     return result;
   }
+
+  /** do these two nodes share the same root, are part of the same tree
+      note: could be pushed down to commons (TreeNode is an interface, though) */
+  public sameTree(other: TreeNode): boolean {
+    return this.root === other.root;
+  }
+
+  /** is this node a regular tcl file? */
+  public isTclFile() {
+    return (this.type === ElementType.File && this.id.toUpperCase().endsWith('.TCL'));
+  }
+
 }
