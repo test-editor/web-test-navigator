@@ -9,6 +9,12 @@ import { PersistenceServiceConfig } from '../persistence-service/persistence.ser
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { TestNavigatorComponent } from './test-navigator.component';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
+import { IndexServiceConfig } from '../index-service/index.service.config';
+import { XtextIndexService } from '../index-service/xtext-index.service';
+import { IndexService } from '../index-service/index.service';
+import { XtextValidationMarkerServiceConfig } from '../validation-marker-service/xtext-validation-marker.service.config';
+import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
+import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 
 @NgModule({
   imports: [
@@ -23,11 +29,20 @@ import { FilterBarComponent } from '../filter-bar/filter-bar.component';
   ]
 })
 export class TestNavigatorModule {
-  static forRoot(persistenceConfig: PersistenceServiceConfig): ModuleWithProviders {
+  static forRoot(persistenceConfig: PersistenceServiceConfig,
+                 indexConfig: IndexServiceConfig,
+                 validationConfig: XtextValidationMarkerServiceConfig): ModuleWithProviders {
     return {
       ngModule: TestNavigatorModule,
-      providers: [PersistenceService, TreeFilterService, HttpProviderService,
-        { provide: PersistenceServiceConfig, useValue: persistenceConfig } ]
+      providers: [
+        PersistenceService,
+        { provide: IndexService, useClass: XtextIndexService },
+        { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
+        TreeFilterService,
+        HttpProviderService,
+        { provide: PersistenceServiceConfig, useValue: persistenceConfig },
+        { provide: IndexServiceConfig, useValue: indexConfig },
+        { provide: XtextValidationMarkerServiceConfig, useValue: validationConfig } ]
     };
   }
 }

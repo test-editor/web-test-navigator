@@ -9,6 +9,7 @@ import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilterState } from '../filter-bar/filter-bar.component';
 import { ElementType } from '../persistence-service/workspace-element';
+import { IndexService } from '../index-service/index.service';
 
 @Component({
   selector: 'app-test-navigator',
@@ -43,7 +44,10 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded
   };
 
-  constructor(private filteredTreeService: TreeFilterService, private messagingService: MessagingService) { }
+  constructor(private filteredTreeService: TreeFilterService,
+              private messagingService: MessagingService,
+              private indexService: IndexService) {
+  }
 
   ngOnInit() {
     this.updateModel();
@@ -130,18 +134,48 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     }
   }
 
-  // private reloadWorkspace(): void {
-  //   this.indexService.reload().then(() => { this.retryingListTreeNodes(WORKSPACE_LOAD_RETRY_COUNT); });
-  // }
+  /** called by button bar to completely load the index anew and load the workspace thereafter */
+  async refreshWorkspace(): Promise<void> {
+    if (!this.refreshRunning()) {
+      this.setRefreshRunning(true);
+      await this.reloadWorkspace();
+      this.setRefreshRunning(false);
+    }
+  }
 
-  private refreshIndex(): void {
-    // this.indexService.refresh().then(() => { this.updateModel(); });
+  /** currently running a refresh ? */
+  private refreshRunning(): boolean {
+    return this.refreshClassValue !== '';
+  }
+
+  /** set the refresh running status */
+  private setRefreshRunning(setRunning: boolean) {
+    if (setRunning) {
+      this.refreshClassValue = 'fa-spin';
+    } else {
+      this.refreshClassValue = '';
+    }
+  }
+
+  /** completely load the index anew and load the workspace thereafter */
+  private async reloadWorkspace(): Promise<void> {
+    await this.indexService.reload();
+    await this.updateModel();
+  }
+
+  /** update the index (with delta from repo if available) and load the workspace thereafter */
+  private async refreshIndex(): Promise<void> {
+    await this.indexService.refresh();
+    await this.updateModel();
   }
 
   /** create a new element within the tree */
   newElement(type: string): void {
-    // this.workspace.newElement(type);
-    // this.changeDetectorRef.detectChanges();
+    // TODO: put TREE_NODE_CREATE_NEW on the bus to initiate creation of new file/folder
+    // make sure the (name) validator heeds relevant filter settings
+    // add this new element to the tree
+    // create this new element on the backend (if it fails, remove element from the tree again)
+    // if type is a file, open it right away (issue a NAVIGATION_OPEN (or something alike) command)
   }
 
   /** controls availability of test execution button */
@@ -159,19 +193,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     }
   }
 
-  refreshRunning(): boolean {
-    return this.refreshClassValue !== '';
-  }
-
   collapseAll(): void {
-  }
-
-  async refresh(): Promise<void> {
-    if (!this.refreshRunning()) {
-      this.refreshClassValue = 'fa-spin';
-      await this.updateModel();
-      this.refreshClassValue = '';
-    }
+    // TODO: put collapse all on the bus such that the respective tree is collapsed
   }
 
   run(): void {

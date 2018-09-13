@@ -15,6 +15,9 @@ import { ElementType } from '../persistence-service/workspace-element';
 import { By } from '@angular/platform-browser';
 import { DebugElement } from '@angular/core';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { IndexService } from '../index-service/index.service';
+import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
+import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -24,6 +27,8 @@ describe('TestNavigatorComponent', () => {
 
   beforeEach(async(() => {
     const mockPersistenceService = mock(PersistenceService);
+    const mockIndexService = mock(IndexService);
+    const mockValidationService = mock(ValidationMarkerService);
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
@@ -33,7 +38,9 @@ describe('TestNavigatorComponent', () => {
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
       providers: [ HttpProviderService, TreeFilterService,
-        { provide: PersistenceService, useValue: instance(mockPersistenceService) } ]
+                   { provide: PersistenceService, useValue: instance(mockPersistenceService) },
+                   { provide: IndexService, useValue: instance(mockIndexService) },
+                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]
     })
       .compileComponents();
   }));

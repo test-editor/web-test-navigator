@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { IndexService, IndexDelta } from './index.service';
-import { XtextIndexServiceConfig } from './xtext-index.service.config';
+import { IndexServiceConfig } from './index.service.config';
 import { HttpClient } from '@angular/common/http';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 
@@ -9,7 +9,7 @@ export class XtextIndexService extends IndexService {
 
   private serviceUrl: string;
 
-  constructor(private httpProvider: HttpProviderService, config: XtextIndexServiceConfig) {
+  constructor(private httpProvider: HttpProviderService, config: IndexServiceConfig) {
     super();
     this.serviceUrl = config.serviceUrl;
   }

@@ -10,16 +10,38 @@ import { TreeFilterService } from './modules/tree-filter-service/tree-filter.ser
 import { FormsModule } from '@angular/forms';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
+import { IndexServiceConfig } from './modules/index-service/index.service.config';
+import { IndexService } from './modules/index-service/index.service';
+import { XtextIndexService } from './modules/index-service/xtext-index.service';
+import { TestNavigatorModule } from '../../public_api';
+import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
+import { XtextValidationMarkerServiceConfig } from './modules/validation-marker-service/xtext-validation-marker.service.config';
+import { XtextDefaultValidationMarkerService } from './modules/validation-marker-service/xtext-default-validation-marker.service';
 describe('AppComponent', () => {
   beforeEach(async(() => {
     const persistenceServiceConfig: PersistenceServiceConfig = { persistenceServiceUrl: 'http://example.org' };
+    const indexServiceConfig: IndexServiceConfig = { serviceUrl: 'http://index.example.org' };
+    const validationServiceConfig: XtextValidationMarkerServiceConfig = { serviceUrl: 'http://validation.example.org' };
     TestBed.configureTestingModule({
-      imports: [ MessagingModule.forRoot(), TreeViewerModule, FormsModule, ButtonsModule.forRoot() ],
+      imports: [
+        MessagingModule.forRoot(),
+        TreeViewerModule,
+        FormsModule,
+        ButtonsModule.forRoot()
+      ],
       declarations: [
         AppComponent, TestNavigatorComponent, FilterBarComponent
       ],
-      providers: [ HttpProviderService, TreeFilterService, PersistenceService,
-        { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig } ]
+      providers: [
+        HttpProviderService,
+        TreeFilterService,
+        PersistenceService,
+        { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
+        { provide: IndexService, useClass: XtextIndexService },
+        { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig },
+        { provide: IndexServiceConfig, useValue: indexServiceConfig  },
+        { provide: XtextValidationMarkerServiceConfig, useValue: validationServiceConfig }
+      ]
     }).compileComponents();
   }));
 

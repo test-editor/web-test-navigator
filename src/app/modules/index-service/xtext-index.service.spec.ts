@@ -1,5 +1,5 @@
-import { async, TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
-import { XtextIndexServiceConfig } from './xtext-index.service.config';
+import { TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
+import { IndexServiceConfig } from './index.service.config';
 import { XtextIndexService } from './xtext-index.service';
 import { IndexService, IndexDelta } from './index.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -9,18 +9,18 @@ import { MessagingService, MessagingModule } from '@testeditor/messaging-service
 
 describe('XtextIndexService', () => {
 
-  let serviceConfig: XtextIndexServiceConfig;
+  let serviceConfig: IndexServiceConfig;
   let messagingService: MessagingService;
   let httpClient: HttpClient;
 
   beforeEach(() => {
-    serviceConfig = new XtextIndexServiceConfig();
+    serviceConfig = new IndexServiceConfig();
     serviceConfig.serviceUrl = '';
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule, HttpClientModule, MessagingModule.forRoot()],
       providers: [
-        { provide: XtextIndexServiceConfig, useValue: serviceConfig },
+        { provide: IndexServiceConfig, useValue: serviceConfig },
         { provide: IndexService, useClass: XtextIndexService },
         HttpClient,
         HttpProviderService

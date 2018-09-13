@@ -1,4 +1,4 @@
-import { async, TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
+import { TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
 import { XtextValidationMarkerServiceConfig } from './xtext-validation-marker.service.config';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
