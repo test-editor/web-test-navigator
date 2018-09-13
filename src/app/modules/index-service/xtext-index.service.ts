@@ -7,11 +7,8 @@ import { HttpProviderService } from '../http-provider-service/http-provider.serv
 @Injectable()
 export class XtextIndexService extends IndexService {
 
-  private serviceUrl: string;
-
   constructor(private httpProvider: HttpProviderService, config: IndexServiceConfig) {
-    super();
-    this.serviceUrl = config.serviceUrl;
+    super(config);
   }
 
   /*

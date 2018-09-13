@@ -1,5 +1,5 @@
 import { TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
-import { XtextValidationMarkerServiceConfig } from './xtext-validation-marker.service.config';
+import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -72,18 +72,18 @@ const expectedValidationMarkersForSampleResponse = [
 ];
 
 describe('ValidationMarkerService', () => {
-  let serviceConfig: XtextValidationMarkerServiceConfig;
+  let serviceConfig: ValidationMarkerServiceConfig;
   let messagingService: MessagingService;
   let httpClient: HttpClient;
 
   beforeEach(() => {
-    serviceConfig = new XtextValidationMarkerServiceConfig();
-    serviceConfig.serviceUrl = '';
+    serviceConfig = new ValidationMarkerServiceConfig();
+    serviceConfig.validationServiceUrl = '';
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule, HttpClientModule, MessagingModule.forRoot()],
       providers: [
-        { provide: XtextValidationMarkerServiceConfig, useValue: serviceConfig },
+        { provide: ValidationMarkerServiceConfig, useValue: serviceConfig },
         { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
         HttpClient,
         HttpProviderService
@@ -104,7 +104,7 @@ describe('ValidationMarkerService', () => {
       // given
       const sampleFile: WorkspaceElement = { path: 'sample/path/file.txt', name: 'file.txt', children: [], type: ElementType.File };
       const allMarkerSummariesRequest = {
-        url: serviceConfig.serviceUrl,
+        url: serviceConfig.validationServiceUrl,
         method: 'GET'
       };
 

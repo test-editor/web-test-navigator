@@ -15,13 +15,13 @@ import { IndexService } from './modules/index-service/index.service';
 import { XtextIndexService } from './modules/index-service/xtext-index.service';
 import { TestNavigatorModule } from '../../public_api';
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
-import { XtextValidationMarkerServiceConfig } from './modules/validation-marker-service/xtext-validation-marker.service.config';
+import { ValidationMarkerServiceConfig } from './modules/validation-marker-service/validation-marker.service.config';
 import { XtextDefaultValidationMarkerService } from './modules/validation-marker-service/xtext-default-validation-marker.service';
 describe('AppComponent', () => {
   beforeEach(async(() => {
     const persistenceServiceConfig: PersistenceServiceConfig = { persistenceServiceUrl: 'http://example.org' };
-    const indexServiceConfig: IndexServiceConfig = { serviceUrl: 'http://index.example.org' };
-    const validationServiceConfig: XtextValidationMarkerServiceConfig = { serviceUrl: 'http://validation.example.org' };
+    const indexServiceConfig: IndexServiceConfig = { indexServiceUrl: 'http://index.example.org' };
+    const validationServiceConfig: ValidationMarkerServiceConfig = { validationServiceUrl: 'http://validation.example.org' };
     TestBed.configureTestingModule({
       imports: [
         MessagingModule.forRoot(),
@@ -40,7 +40,7 @@ describe('AppComponent', () => {
         { provide: IndexService, useClass: XtextIndexService },
         { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig },
         { provide: IndexServiceConfig, useValue: indexServiceConfig  },
-        { provide: XtextValidationMarkerServiceConfig, useValue: validationServiceConfig }
+        { provide: ValidationMarkerServiceConfig, useValue: validationServiceConfig }
       ]
     }).compileComponents();
   }));

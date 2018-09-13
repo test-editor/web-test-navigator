@@ -1,18 +1,15 @@
 import { Injectable } from '@angular/core';
 import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
-import { XtextValidationMarkerServiceConfig } from './xtext-validation-marker.service.config';
+import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
 import { HttpClient } from '@angular/common/http';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 
 @Injectable()
 export class XtextDefaultValidationMarkerService extends ValidationMarkerService {
 
-  private serviceUrl: string;
-
-  constructor(private httpProvider: HttpProviderService, config: XtextValidationMarkerServiceConfig) {
-    super();
-    this.serviceUrl = config.serviceUrl;
+  constructor(private httpProvider: HttpProviderService, config: ValidationMarkerServiceConfig) {
+    super(config);
   }
 
   public async getAllMarkerSummaries(workspaceRoot: WorkspaceElement): Promise<ValidationSummary[]> {

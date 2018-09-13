@@ -15,7 +15,7 @@ describe('XtextIndexService', () => {
 
   beforeEach(() => {
     serviceConfig = new IndexServiceConfig();
-    serviceConfig.serviceUrl = '';
+    serviceConfig.indexServiceUrl = '';
 
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule, HttpClientModule, MessagingModule.forRoot()],
@@ -40,7 +40,7 @@ describe('XtextIndexService', () => {
     (httpMock: HttpTestingController, indexService: IndexService) => {
       // given
       const indexServiceRefreshRequest = {
-        url: serviceConfig.serviceUrl + '/refresh',
+        url: serviceConfig.indexServiceUrl + '/refresh',
         method: 'POST'
       };
       const mockResponse = [{ path: 'some/path/to/file' }];
@@ -61,7 +61,7 @@ describe('XtextIndexService', () => {
     (httpMock: HttpTestingController, indexService: IndexService) => {
       // given
       const indexServiceRefreshRequest = {
-        url: serviceConfig.serviceUrl + '/refresh',
+        url: serviceConfig.indexServiceUrl + '/refresh',
         method: 'POST'
       };
       const mockResponse = null;

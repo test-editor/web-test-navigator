@@ -1,3 +1,3 @@
 export class IndexServiceConfig {
-  serviceUrl: string;
+  indexServiceUrl: string;
 }

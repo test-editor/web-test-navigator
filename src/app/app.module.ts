@@ -19,8 +19,8 @@ import { IndexServiceMock } from './index.service.mock';
     HttpClientModule,
     BrowserModule,
     TestNavigatorModule.forRoot( { persistenceServiceUrl: 'http://localhost:9080' },
-                                 { serviceUrl: 'http://localhost:8080' },
-                                 { serviceUrl: 'http://localhsot:8080' }),
+                                 { indexServiceUrl: 'http://localhost:8080' },
+                                 { validationServiceUrl: 'http://localhsot:8080' }),
     MessagingModule.forRoot()
   ],
   providers: [
