@@ -199,8 +199,8 @@
   resolved "https://registry.yarnpkg.com/@testeditor/messaging-service/-/messaging-service-1.4.1.tgz#de0f8cdd18bc6b19ad01a82ba6d0f0f75ff85266"
 
 "@testeditor/testeditor-commons@~0.2.0":
-  version "0.2.2"
-  resolved "https://registry.yarnpkg.com/@testeditor/testeditor-commons/-/testeditor-commons-0.2.2.tgz#69336d78713e099b1a3a1752bd3508529fd07744"
+  version "0.2.3"
+  resolved "https://registry.yarnpkg.com/@testeditor/testeditor-commons/-/testeditor-commons-0.2.3.tgz#444e61eb7b3657a33b24933841a342efa7bb0e30"
   dependencies:
     tslib "^1.7.1"
 

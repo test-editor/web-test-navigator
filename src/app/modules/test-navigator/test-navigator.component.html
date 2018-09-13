@@ -6,7 +6,7 @@
       <button id="run" class="icon fa fa-play" (click)="run()" [disabled]="!selectionIsExecutable()" title="execute test"></button>
     </div>
     <div class="icons-right">
-      <button id="refresh" [className]="'icon fa fa-refresh '+refreshClassValue" [disabled]="refreshRunning()" aria-hidden="true" (click)="refresh()" title="refresh workspace"></button>
+      <button id="refresh" [className]="'icon fa fa-refresh '+refreshClassValue" [disabled]="refreshRunning()" aria-hidden="true" (click)="refreshWorkspace()" title="refresh workspace"></button>
       <button id="collapse-all" class="icon fa fa-minus-square-o" aria-hidden="true" (click)="collapseAll()" title="collapse all"></button>
     </div>
   </div>
