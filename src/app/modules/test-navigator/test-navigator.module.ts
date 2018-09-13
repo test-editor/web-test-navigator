@@ -15,10 +15,11 @@ import { IndexService } from '../index-service/index.service';
 import { ValidationMarkerServiceConfig } from '../validation-marker-service/validation-marker.service.config';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
+import { MessagingModule } from '@testeditor/messaging-service';
 
 @NgModule({
   imports: [
-    CommonModule, TreeViewerModule, FormsModule, ButtonsModule.forRoot()
+    CommonModule, TreeViewerModule, FormsModule, ButtonsModule.forRoot(), MessagingModule.forRoot()
   ],
   declarations: [
     TestNavigatorComponent,
