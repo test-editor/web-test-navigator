@@ -1,15 +1,20 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { testNavigatorFilter, filterFor } from '../model/filters';
-import { TreeNode, TreeViewerConfig, TREE_NODE_SELECTED, TREE_NODE_DESELECTED } from '@testeditor/testeditor-commons';
+import { NewElementConfig, TreeNode, TreeViewerConfig,
+  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
-import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_EXECUTE_REQUEST, NAVIGATION_OPEN } from '../event-types-out';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+import { NAVIGATION_CREATED, NAVIGATION_OPEN, TEST_EXECUTE_REQUEST,
+  WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { FilterState } from '../filter-bar/filter-bar.component';
-import { ElementType } from '../persistence-service/workspace-element';
 import { IndexService } from '../index-service/index.service';
+import { filterFor, testNavigatorFilter } from '../model/filters';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { isConflict } from '../persistence-service/conflict';
+import { PersistenceService } from '../persistence-service/persistence.service';
+import { ElementType } from '../persistence-service/workspace-element';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+import { PathValidator } from './path-validator';
 
 @Component({
   selector: 'app-test-navigator',
@@ -21,7 +26,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private readonly WORKSPACE_LOAD_RETRY_COUNT = 3;
   private fileSavedSubscription: Subscription;
   public refreshClassValue  = '';
-  private tclCurrentlySelected: TestNavigatorTreeNode = null;
+  private selectedNode: TestNavigatorTreeNode = null;
   private treeSelectionChangeSubscription: Subscription;
   private treeDeselectionChangeSubscription: Subscription;
   private testExecutionSubscription: Subscription;
@@ -46,7 +51,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   constructor(private filteredTreeService: TreeFilterService,
               private messagingService: MessagingService,
-              private indexService: IndexService) {
+              private indexService: IndexService,
+              private pathValidator: PathValidator,
+              private persistenceService: PersistenceService) {
   }
 
   ngOnInit() {
@@ -81,8 +88,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
     this.treeDeselectionChangeSubscription = this.messagingService.subscribe(TREE_NODE_DESELECTED, (node) => {
       this.log('received TREE_NODE_DESELECTED', node);
-      if (node === this.tclCurrentlySelected) {
-        this.tclCurrentlySelected = null;
+      if (node === this.selectedNode) {
+        this.selectedNode = null;
       }
     });
   }
@@ -171,25 +178,48 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   /** create a new element within the tree */
   newElement(type: string): void {
-    // TODO: put TREE_NODE_CREATE_NEW on the bus to initiate creation of new file/folder
-    // make sure the (name) validator heeds relevant filter settings
-    // add this new element to the tree
-    // create this new element on the backend (if it fails, remove element from the tree again)
-    // if type is a file, open it right away (issue a NAVIGATION_OPEN (or something alike) command)
+    const payload: NewElementConfig = {
+      indent: this.selectedNode.type === ElementType.Folder,
+      validateName: (newName: string) => {
+        let result: { valid: boolean, message?: string } = { valid: true };
+        if (!this.pathValidator.isValid(newName)) {
+          result = { valid: false, message: this.pathValidator.getMessage(newName) };
+        }
+        return result;
+      },
+      createNewElement: (newName: string) => this.sendCreateRequest(this.selectedNode.getDirectory() + newName, type),
+      iconCssClasses: type === ElementType.Folder ? 'fa-folder' : 'fa-file'
+    };
+    this.messagingService.publish(TREE_NODE_CREATE_AT_SELECTED, payload);
+  }
+
+  private async sendCreateRequest(newPath: string, type: string): Promise<boolean> {
+    let result = false;
+    try {
+      const response = await this.persistenceService.createResource(newPath, type);
+      let createdPath: string;
+      if (isConflict(response)) {
+        this.errorMessage = response.message;
+        createdPath = newPath;
+      } else {
+        createdPath = response;
+        result = true;
+      }
+      this.messagingService.publish(NAVIGATION_CREATED, { path: createdPath });
+    } catch (error) {
+      this.log(error, [newPath, type]);
+    }
+    return result;
   }
 
   /** controls availability of test execution button */
   selectionIsExecutable(): boolean {
-    return this.tclCurrentlySelected != null;
+    return this.selectedNode && this.selectedNode.isTclFile();
   }
 
   select(node: TestNavigatorTreeNode) {
     if (this.model.sameTree(node)) {
-      if (node.isTclFile()) {
-        this.tclCurrentlySelected = node;
-      } else {
-        this.tclCurrentlySelected = null;
-      }
+      this.selectedNode = node;
     }
   }
 
@@ -199,7 +229,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   run(): void {
     if (this.selectionIsExecutable()) {
-      this.messagingService.publish(TEST_EXECUTE_REQUEST, this.tclCurrentlySelected.id);
+      this.messagingService.publish(TEST_EXECUTE_REQUEST, this.selectedNode.id);
     } else {
       this.log('WARNING: trying to execute test, but no test case file is selected.');
     }
