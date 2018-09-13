@@ -1,10 +1,10 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
+import { InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig, EmbeddedDeleteButton, DeleteAction,
   TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
-import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED,
+import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
   TEST_EXECUTE_REQUEST, WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { FilterState } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
@@ -48,7 +48,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         this.open(testNavNode);
       }
     },
-    onIconClick: (node: TreeNode) => node.expanded = !node.expanded
+    onIconClick: (node: TreeNode) => node.expanded = !node.expanded,
+    embeddedButton: (node: TreeNode) => new EmbeddedDeleteButton(
+      new DeleteAction(node, (_node) => this.onDeleteConfirm(_node))),
   };
 
   constructor(private filteredTreeService: TreeFilterService,
@@ -356,4 +358,24 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     }
   }
 
+  async onDeleteConfirm(nodeToDelete: TreeNode): Promise<void> {
+    try {
+      const result = await this.persistenceService.deleteResource(nodeToDelete.id);
+      if (isConflict(result)) {
+        this.handleDeleteFailed(result.message);
+      } else {
+        this.messagingService.publish(NAVIGATION_DELETED, nodeToDelete);
+      }
+    } catch (error) {
+      this.log(error, nodeToDelete);
+      this.handleDeleteFailed('Error while deleting element!');
+    }
+  }
+
+  handleDeleteFailed(message: string): void {
+    this.errorMessage = message;
+    setTimeout(() => {
+      this.errorMessage = null;
+    }, 3000);
+  }
 }
