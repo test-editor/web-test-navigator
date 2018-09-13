@@ -23,6 +23,7 @@ export class XtextDefaultValidationMarkerService extends ValidationMarkerService
       this.recurseAndAggregateValidationSummaries(workspaceRoot, summaryMap);
       return Array.from(summaryMap.values());
     } catch (error) {
+      console.log(error);
       return [];
     }
   }
