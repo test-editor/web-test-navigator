@@ -130,6 +130,11 @@ export class TestNavigatorTreeNode implements TreeNode {
     return (this.type === ElementType.File && this.id.toUpperCase().endsWith('.TCL'));
   }
 
+  public rename(newPath: string, newName: string) {
+    this.workspaceElement.path = newPath;
+    this.workspaceElement.name = newName;
+  }
+
   public getDirectory(): string {
     if (this.type === ElementType.Folder) {
       return this.endWithSlash(this.id);

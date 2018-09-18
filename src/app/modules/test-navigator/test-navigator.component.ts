@@ -201,7 +201,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     // if type is a file, open it right away (issue a NAVIGATION_OPEN (or something alike) command)
     const payload: TreeViewerInputBoxConfig = {
       indent: this.selectedNode.type === ElementType.Folder,
-      validateName: this.validateName,
+      validateName: (newName: string) => this.validateName(newName),
       onConfirm: (newName: string) => this.sendCreateRequest(this.selectedNode.getDirectory() + newName, type),
       iconCssClasses: type === ElementType.Folder ? 'fa-folder' : 'fa-file'
     };
@@ -213,9 +213,14 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       validateName: (newName: string) => this.selectedNode.dirty ?
         { valid: false, message: 'cannot rename dirty files' } : this.validateName(newName),
       onConfirm: (newName: string) => {
-        const pathElements = this.selectedNode.id.split('/');
+        const selectedNode = this.selectedNode;
+        const pathElements = selectedNode.id.split('/');
         const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
-        return this.sendRenameRequest(newPath, this.selectedNode.id);
+        const requestSuccessful = this.sendRenameRequest(newPath, selectedNode.id);
+        if (requestSuccessful) {
+          selectedNode.rename(newPath, newName);
+        }
+        return requestSuccessful;
       }
     };
     this.messagingService.publish(TREE_NODE_RENAME_SELECTED, payload);

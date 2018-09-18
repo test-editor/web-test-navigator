@@ -5,7 +5,7 @@ import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when } from 'ts-mockito/lib/ts-mockito';
+import { instance, mock, when, spy, verify } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -23,11 +23,13 @@ describe('TestNavigatorComponent', () => {
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let messagingService: MessagingService;
   let sidenav: DebugElement;
+  let mockPathValidator: PathValidator;
 
   beforeEach(async(() => {
     const mockPersistenceService = mock(PersistenceService);
     const mockIndexService = mock(IndexService);
     const mockValidationService = mock(ValidationMarkerService);
+    mockPathValidator = mock(PathValidator);
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
@@ -36,7 +38,8 @@ describe('TestNavigatorComponent', () => {
     TestBed.configureTestingModule({
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
-      providers: [ HttpProviderService, TreeFilterService, PathValidator,
+      providers: [ HttpProviderService, TreeFilterService,
+                   { provide: PathValidator, useValue: instance(mockPathValidator) },
                    { provide: PersistenceService, useValue: instance(mockPersistenceService) },
                    { provide: IndexService, useValue: instance(mockIndexService) },
                    { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]
@@ -200,5 +203,24 @@ describe('TestNavigatorComponent', () => {
 
     flush();
   }));
+
+  it('validates the input using PathValidator during a new element request', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    const newFileButton = fixture.debugElement.query(By.css('#new-file'));
+    const contextElement = fixture.debugElement.query(By.css('.tree-view-item-key'));
+    contextElement.nativeElement.click(); fixture.detectChanges();
+    newFileButton.nativeElement.click(); fixture.detectChanges();
+    const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
+    inputBox.nativeElement.value = 'newElementName';
+
+    // when
+    inputBox.triggerEventHandler('keyup', {});
+
+    // then
+    verify(mockPathValidator.isValid('newElementName')).called();
+    expect().nothing();
+  });
 
 });
