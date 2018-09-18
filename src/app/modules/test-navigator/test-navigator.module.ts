@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { ModuleWithProviders, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessagingModule } from '@testeditor/messaging-service';
-import { TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -17,6 +16,7 @@ import { ValidationMarkerServiceConfig } from '../validation-marker-service/vali
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 import { PathValidator } from './path-validator';
 import { TestNavigatorComponent } from './test-navigator.component';
+import { TreeViewerModule } from '@testeditor/testeditor-commons';
 
 @NgModule({
   imports: [
