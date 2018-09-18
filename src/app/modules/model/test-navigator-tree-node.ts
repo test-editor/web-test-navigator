@@ -18,6 +18,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   cssClasses = '';
   expanded = undefined;
   root: TestNavigatorTreeNode;
+  dirty = false;
 
   constructor(private workspaceElement: WorkspaceElement, root?: TestNavigatorTreeNode) {
     switch (workspaceElement.type) {
