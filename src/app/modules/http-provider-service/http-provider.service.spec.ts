@@ -3,7 +3,7 @@ import { TestBed, inject, fakeAsync } from '@angular/core/testing';
 import { HttpProviderService } from './http-provider.service';
 import { MessagingService, MessagingModule } from '@testeditor/messaging-service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('HttpProviderService', () => {
   let messagingService: MessagingService;
