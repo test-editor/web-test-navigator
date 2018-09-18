@@ -1,19 +1,20 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig, EmbeddedDeleteButton, DeleteAction,
-  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
+         TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
+       } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED  } from '../event-types-in';
 import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
-  TEST_EXECUTE_REQUEST, WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
+         WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_SELECTED } from '../event-types-out';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilterState } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
 import { filterFor, testNavigatorFilter } from '../model/filters';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { isConflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
 
@@ -64,7 +65,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.updateModel();
     this.setupRepoChangeListeners();
     this.setupTreeSelectionChangeListener();
-    this.setupTestExecutionListener();
   }
 
   ngOnDestroy(): void {
@@ -74,17 +74,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.testExecutionSubscription.unsubscribe();
     this.testExecutionFailedSubscription.unsubscribe();
     this.openFilesSubscriptions.clear();
-  }
-
-  private setupTestExecutionListener(): void {
-    this.testExecutionSubscription = this.messagingService.subscribe(TEST_EXECUTION_STARTED, payload => {
-      this.log('received TEST_EXECUTION_STARTED', payload);
-      this.showNotification(payload.message, payload.path);
-    });
-    this.testExecutionFailedSubscription = this.messagingService.subscribe(TEST_EXECUTION_START_FAILED, payload => {
-      this.log('received TEST_EXECUTION_START_FAILED', payload);
-      this.showErrorMessage(payload.message, payload.path);
-    });
   }
 
   private setupTreeSelectionChangeListener() {
@@ -310,27 +299,17 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     return result;
   }
 
-  /** controls availability of test execution button */
-  selectionIsExecutable(): boolean {
-    return this.selectedNode && this.selectedNode.isTclFile();
-  }
-
   select(node: TestNavigatorTreeNode) {
     if (this.model.sameTree(node)) {
       this.selectedNode = node;
+      if (node.isTclFile()) {
+        this.messagingService.publish(TEST_SELECTED, node);
+      }
     }
   }
 
   collapseAll(): void {
     // TODO: put collapse all on the bus such that the respective tree is collapsed
-  }
-
-  run(): void {
-    if (this.selectionIsExecutable()) {
-      this.messagingService.publish(TEST_EXECUTE_REQUEST, this.selectedNode.id);
-    } else {
-      this.log('WARNING: trying to execute test, but no test case file is selected.');
-    }
   }
 
   hideNotification(): void {

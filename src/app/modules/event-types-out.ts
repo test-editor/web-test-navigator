@@ -13,6 +13,5 @@ export const WORKSPACE_RELOAD_RESPONSE = 'workspace.reload.response';
 export const WORKSPACE_RETRIEVED = 'workspace.retrieved';
 export const WORKSPACE_RETRIEVED_FAILED = 'workspace.retrieved.failed';
 
-// request execution of a test case,
-// payload is the absolute path of the respective tcl
-export const TEST_EXECUTE_REQUEST = 'test.execute.request';
+// payload is the selected TreeNode (must be a tcl)
+export const TEST_SELECTED = 'test.selected';

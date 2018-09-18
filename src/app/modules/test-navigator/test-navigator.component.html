@@ -4,7 +4,6 @@
       <button id="new-file" class="icon fa fa-file" [disabled]="!selectedNode" (click)="newElement('file')" title="create new file"></button>
       <button id="new-folder" class="icon fa fa-folder" [disabled]="!selectedNode" (click)="newElement('folder')" title="create new folder"></button>
       <button id="rename" class="icon fa fa-edit" [disabled]="renameDisabled" (click)="renameElement()" [title]="renameHoverText"></button>
-      <button id="run" class="icon fa fa-play" (click)="run()" [disabled]="!selectionIsExecutable()" title="execute test"></button>
     </div>
     <div class="icons-right">
       <button id="refresh" [className]="'icon fa fa-refresh '+refreshClassValue" [disabled]="refreshRunning()" aria-hidden="true" (click)="refreshWorkspace()" title="refresh workspace"></button>
