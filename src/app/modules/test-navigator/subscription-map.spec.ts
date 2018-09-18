@@ -1,5 +1,5 @@
 import { SubscriptionMap } from './subscription-map';
-import { mock, instance, verify, when } from 'ts-mockito/lib/ts-mockito';
+import { mock, instance, verify } from 'ts-mockito/lib/ts-mockito';
 import { Subscription } from 'rxjs/Subscription';
 
 describe('SubscriptionMap', () => {

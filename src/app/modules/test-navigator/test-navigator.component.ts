@@ -1,11 +1,11 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
-  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_SELECTED, InputBoxConfig, TREE_NODE_RENAME_SELECTED } from '@testeditor/testeditor-commons';
+import { InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
+  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED, EDITOR_DIRTY_CHANGED } from '../event-types-in';
-import { NAVIGATION_CREATED, NAVIGATION_OPEN, TEST_EXECUTE_REQUEST,
-  WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, NAVIGATION_RENAMED } from '../event-types-out';
+import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED,
+  TEST_EXECUTE_REQUEST, WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { FilterState } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
 import { filterFor, testNavigatorFilter } from '../model/filters';
@@ -68,6 +68,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.fileSavedSubscription.unsubscribe();
     this.treeDeselectionChangeSubscription.unsubscribe();
     this.treeSelectionChangeSubscription.unsubscribe();
+    this.testExecutionSubscription.unsubscribe();
+    this.testExecutionFailedSubscription.unsubscribe();
   }
 
   private setupTestExecutionListener(): void {
