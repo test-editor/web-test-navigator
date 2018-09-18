@@ -1,6 +1,6 @@
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { PersistenceService } from './persistence.service';
-import { HttpClientModule, HttpClient, HttpResponse } from '@angular/common/http';
+import { HttpClientModule, HttpClient } from '@angular/common/http';
 import { HttpTestingController, HttpClientTestingModule } from '@angular/common/http/testing';
 import { inject, tick } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
@@ -90,7 +90,6 @@ describe('PersistenceService', () => {
     const tclFilePath = 'path/to/file.tcl';
     const url = `${serviceConfig.persistenceServiceUrl}/documents/${tclFilePath}`;
     const message = `The file '${tclFilePath}' does not exist.`;
-    const mockResponse = new HttpResponse({ body: message, status: 409, statusText: 'Conflict' });
 
     const expectedResult = new Conflict(message);
 

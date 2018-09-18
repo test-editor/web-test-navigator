@@ -1,23 +1,22 @@
+import { DebugElement } from '@angular/core';
+import { async, ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
+import { By } from '@angular/platform-browser';
+import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
+import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { instance, mock, when } from 'ts-mockito/lib/ts-mockito';
-import { FilterBarComponent } from '../filter-bar/filter-bar.component';
-import { async, ComponentFixture, TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
-import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
-import { PersistenceServiceConfig } from '../persistence-service/persistence.service.config';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
-import { PersistenceService } from '../persistence-service/persistence.service';
-import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
-import { TestNavigatorComponent } from './test-navigator.component';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { ElementType } from '../persistence-service/workspace-element';
-import { By } from '@angular/platform-browser';
-import { DebugElement } from '@angular/core';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { FilterBarComponent } from '../filter-bar/filter-bar.component';
+import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
-import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { PersistenceService } from '../persistence-service/persistence.service';
+import { ElementType } from '../persistence-service/workspace-element';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
+import { PathValidator } from './path-validator';
+import { TestNavigatorComponent } from './test-navigator.component';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -37,7 +36,7 @@ describe('TestNavigatorComponent', () => {
     TestBed.configureTestingModule({
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
-      providers: [ HttpProviderService, TreeFilterService,
+      providers: [ HttpProviderService, TreeFilterService, PathValidator,
                    { provide: PersistenceService, useValue: instance(mockPersistenceService) },
                    { provide: IndexService, useValue: instance(mockIndexService) },
                    { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]

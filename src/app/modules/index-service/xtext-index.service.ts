@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { IndexService, IndexDelta } from './index.service';
 import { IndexServiceConfig } from './index.service.config';
-import { HttpClient } from '@angular/common/http';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 
 @Injectable()

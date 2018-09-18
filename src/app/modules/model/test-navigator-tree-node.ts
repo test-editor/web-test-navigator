@@ -18,6 +18,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   cssClasses = '';
   expanded = undefined;
   root: TestNavigatorTreeNode;
+  dirty = false;
 
   constructor(private workspaceElement: WorkspaceElement, root?: TestNavigatorTreeNode) {
     switch (workspaceElement.type) {
@@ -129,4 +130,19 @@ export class TestNavigatorTreeNode implements TreeNode {
     return (this.type === ElementType.File && this.id.toUpperCase().endsWith('.TCL'));
   }
 
+  public getDirectory(): string {
+    if (this.type === ElementType.Folder) {
+      return this.endWithSlash(this.id);
+    } else if (this.type === ElementType.File) {
+      const split = this.id.split('/');
+      split.pop();
+      const parentPath = split.join('/');
+      return this.endWithSlash(parentPath);
+    }
+    throw new Error('Invalid element type: ' + this.type);
+  }
+
+  private endWithSlash(path: string) {
+    return path.endsWith('/') ? path : path + '/';
+  }
 }

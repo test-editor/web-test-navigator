@@ -1,4 +1,3 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { IndexService, IndexDelta } from './modules/index-service/index.service';
 

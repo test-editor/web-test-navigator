@@ -1,22 +1,23 @@
-import { TestBed, async } from '@angular/core/testing';
-import { AppComponent } from './app.component';
-import { TestNavigatorComponent } from './modules/test-navigator/test-navigator.component';
+import { async, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
 import { MessagingModule } from '@testeditor/messaging-service';
+import { TreeViewerModule } from '@testeditor/testeditor-commons';
+import { ButtonsModule } from 'ngx-bootstrap/buttons';
+import { AppComponent } from './app.component';
+import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
 import { HttpProviderService } from './modules/http-provider-service/http-provider.service';
+import { IndexService } from './modules/index-service/index.service';
+import { IndexServiceConfig } from './modules/index-service/index.service.config';
+import { XtextIndexService } from './modules/index-service/xtext-index.service';
 import { PersistenceService } from './modules/persistence-service/persistence.service';
 import { PersistenceServiceConfig } from './modules/persistence-service/persistence.service.config';
-import { TreeViewerModule } from '@testeditor/testeditor-commons';
+import { PathValidator } from './modules/test-navigator/path-validator';
+import { TestNavigatorComponent } from './modules/test-navigator/test-navigator.component';
 import { TreeFilterService } from './modules/tree-filter-service/tree-filter.service';
-import { FormsModule } from '@angular/forms';
-import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
-import { IndexServiceConfig } from './modules/index-service/index.service.config';
-import { IndexService } from './modules/index-service/index.service';
-import { XtextIndexService } from './modules/index-service/xtext-index.service';
-import { TestNavigatorModule } from '../../public_api';
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
 import { ValidationMarkerServiceConfig } from './modules/validation-marker-service/validation-marker.service.config';
 import { XtextDefaultValidationMarkerService } from './modules/validation-marker-service/xtext-default-validation-marker.service';
+
 describe('AppComponent', () => {
   beforeEach(async(() => {
     const persistenceServiceConfig: PersistenceServiceConfig = { persistenceServiceUrl: 'http://example.org' };
@@ -36,6 +37,7 @@ describe('AppComponent', () => {
         HttpProviderService,
         TreeFilterService,
         PersistenceService,
+        PathValidator,
         { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
         { provide: IndexService, useClass: XtextIndexService },
         { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig },
