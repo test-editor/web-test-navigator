@@ -17,7 +17,7 @@ import { FilterState } from '../filter-bar/filter-bar.component';
   export function isTestEditorFile(path: string) {
     return isTslFile(path) || isTclFile(path) || isConfigFile(path) || isTmlFile(path) || isAmlFile(path); }
 
-  export function filterFor(state: FilterState, node: TestNavigatorTreeNode): boolean {
+  export function filterFor(state: FilterState, node: {type: ElementType, id: string}): boolean {
     return node.type === ElementType.Folder || (
       ( !(state.tsl || state.tcl || state.aml) && isTestEditorFile(node.id)) ) || (
       ( state.tsl && isTslFile(node.id) ) ||

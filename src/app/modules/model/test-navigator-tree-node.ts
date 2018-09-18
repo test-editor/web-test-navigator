@@ -17,10 +17,10 @@ export class TestNavigatorTreeNode implements TreeNode {
   leafCssClasses = '';
   cssClasses = '';
   expanded = undefined;
-  root: TestNavigatorTreeNode;
+  parent: TestNavigatorTreeNode;
   dirty = false;
 
-  constructor(private workspaceElement: WorkspaceElement, root?: TestNavigatorTreeNode) {
+  constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
     switch (workspaceElement.type) {
       case ElementType.File: this.leafCssClasses = this.leafCssClassesForFile(workspaceElement.name); break;
       case ElementType.Folder: {
@@ -28,10 +28,10 @@ export class TestNavigatorTreeNode implements TreeNode {
         this.expanded = false;
       }
     }
-    if (root === undefined) {
-      this.root = this;
+    if (parent === undefined) {
+      this.parent = null;
     } else {
-      this.root = root;
+      this.parent = parent;
     }
   }
 
@@ -69,10 +69,14 @@ export class TestNavigatorTreeNode implements TreeNode {
     return this.workspaceElement.path;
   }
 
-  get children(): TreeNode[] {
+  get root(): TestNavigatorTreeNode {
+    return this.parent ? this.parent.root : this;
+  }
+
+  get children(): TestNavigatorTreeNode[] {
     if (!this._children) {
       if (this.workspaceElement.children) {
-        this._children = this.workspaceElement.children.map((element) => new TestNavigatorTreeNode(element, this.root))
+        this._children = this.workspaceElement.children.map((element) => new TestNavigatorTreeNode(element, this))
           .sort((nodeA, nodeB) => {
             return nodeA.name.localeCompare(nodeB.name);
           });
@@ -82,6 +86,19 @@ export class TestNavigatorTreeNode implements TreeNode {
 
     }
     return this._children;
+  }
+
+  addChild(rawElement: WorkspaceElement): TestNavigatorTreeNode {
+    this.workspaceElement.children.push(rawElement);
+    let newNode: TestNavigatorTreeNode;
+    if (this._children) {
+      newNode = new TestNavigatorTreeNode(rawElement, this);
+      this._children.push(newNode);
+      this._children.sort((nodeA, nodeB) => nodeA.name.localeCompare(nodeB.name));
+    } else {
+      newNode = this.children.find((node) => node.id === rawElement.path);
+    }
+    return newNode;
   }
 
   private leafCssClassesForFile(fileName: string): string {

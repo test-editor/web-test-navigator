@@ -48,14 +48,14 @@ export class PersistenceServiceMock extends AbstractPersistenceService {
     return Promise.resolve(this.data);
   }
 
-  createResource(path: string, type: string): Promise<string | Conflict> {
+  createResource(path: string, type: ElementType): Promise<string | Conflict> {
     console.log(`Received createResource(path: '${path}', type: '${type}')`);
-    return Promise.reject('not supported by mock');
+    return Promise.resolve(path);
   }
 
   renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
     console.log(`Received renameResource(newPath: '${newPath}', oldPath: '${oldPath}')`);
-    return Promise.reject('not supported by mock');
+    return Promise.resolve(newPath);
   }
 
   deleteResource(path: string): Promise<string> {

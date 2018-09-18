@@ -37,6 +37,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   notification: string;
 
   model: TestNavigatorTreeNode;
+  filterState: FilterState = { aml: false, tcl: false, tsl: false };
   treeConfig: TreeViewerConfig = {
     onClick: () => null,
     onDoubleClick: (node: TreeNode) => {
@@ -111,6 +112,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   onFiltersChanged(state: FilterState) {
+    this.filterState = state;
     this.model.forEach((node) => (node as TestNavigatorTreeNode).setVisible(filterFor(state, node)));
   }
 
@@ -193,30 +195,39 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
 
   /** create a new element within the tree */
-  newElement(type: string): void {
-    // TODO: put TREE_NODE_CREATE_NEW on the bus to initiate creation of new file/folder
-    // make sure the (name) validator heeds relevant filter settings
-    // add this new element to the tree
-    // create this new element on the backend (if it fails, remove element from the tree again)
-    // if type is a file, open it right away (issue a NAVIGATION_OPEN (or something alike) command)
+  newElement(type: ElementType): void {
+    const contextNode = this.selectedNode;
+    const parentNode = contextNode.type === ElementType.Folder ? contextNode : contextNode.parent;
     const payload: TreeViewerInputBoxConfig = {
-      indent: this.selectedNode.type === ElementType.Folder,
-      validateName: (newName: string) => this.validateName(newName),
-      onConfirm: (newName: string) => this.sendCreateRequest(this.selectedNode.getDirectory() + newName, type),
+      indent: contextNode.type === ElementType.Folder,
+      validateName: (newName: string) => this.validateName(newName, type),
+      onConfirm: async (newName: string) => {
+        const newPath = contextNode.getDirectory() + newName;
+        const requestSuccessful = await this.sendCreateRequest(newPath, type);
+        if (requestSuccessful) {
+          /* const newNode = */ parentNode.addChild({children: [], name: newName, path: newPath, type: type });
+          parentNode.expanded = true;
+          // TODO programmatically select newNode
+          if (type === ElementType.File) {
+            this.messagingService.publish(NAVIGATION_OPEN, { name: newName, id: newPath });
+          }
+        }
+        return requestSuccessful;
+      },
       iconCssClasses: type === ElementType.Folder ? 'fa-folder' : 'fa-file'
     };
     this.messagingService.publish(TREE_NODE_CREATE_AT_SELECTED, payload);
   }
 
   renameElement(): void {
+    const selectedNode = this.selectedNode;
     const payload: InputBoxConfig = {
       validateName: (newName: string) => this.selectedNode.dirty ?
-        { valid: false, message: 'cannot rename dirty files' } : this.validateName(newName),
-      onConfirm: (newName: string) => {
-        const selectedNode = this.selectedNode;
+        { valid: false, message: 'cannot rename dirty files' } : this.validateName(newName, selectedNode.type),
+      onConfirm: async (newName: string) => {
         const pathElements = selectedNode.id.split('/');
         const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
-        const requestSuccessful = this.sendRenameRequest(newPath, selectedNode.id);
+        const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
         if (requestSuccessful) {
           selectedNode.rename(newPath, newName);
         }
@@ -226,15 +237,18 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.messagingService.publish(TREE_NODE_RENAME_SELECTED, payload);
   }
 
-  private validateName(newName: string): { valid: boolean, message?: string } {
+  private validateName(newName: string, type: ElementType): { valid: boolean, message?: string } {
     let result: { valid: boolean, message?: string } = { valid: true };
     if (!this.pathValidator.isValid(newName)) {
       result = { valid: false, message: this.pathValidator.getMessage(newName) };
     }
+    if (!filterFor(this.filterState, {type: type, id: newName})) {
+      result = { valid: false, message: 'invalid (or currently filtered) file extension' };
+    }
     return result;
   }
 
-  private async sendCreateRequest(newPath: string, type: string): Promise<boolean> {
+  private async sendCreateRequest(newPath: string, type: ElementType): Promise<boolean> {
     let result = false;
     try {
       const response = await this.persistenceService.createResource(newPath, type);

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { WorkspaceElement } from './workspace-element';
+import { WorkspaceElement, ElementType } from './workspace-element';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { Conflict } from './conflict';
 import 'rxjs/add/operator/toPromise';
@@ -15,7 +15,7 @@ export abstract class AbstractPersistenceService {
   abstract listFiles(): Promise<WorkspaceElement>;
   abstract renameResource(newPath: string, oldPath: string): Promise<string | Conflict>;
   abstract deleteResource(path: string): Promise<string | Conflict>;
-  abstract createResource(path: string, type: string): Promise<string | Conflict>;
+  abstract createResource(path: string, type: ElementType): Promise<string | Conflict>;
   abstract getBinaryResource(path: string): Promise<Blob>;
 }
 
@@ -54,7 +54,7 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
-  async createResource(path: string, type: string): Promise<string | Conflict> {
+  async createResource(path: string, type: ElementType): Promise<string | Conflict> {
     const client = await this.httpProvider.getHttpClient();
     try {
       return (await client.post(this.getURL(path), '', { observe: 'response', responseType: 'text', params: { type: type } })

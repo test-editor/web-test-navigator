@@ -8,6 +8,7 @@ import { fakeAsync } from '@angular/core/testing';
 import { MessagingService, MessagingModule } from '@testeditor/messaging-service';
 import { Conflict } from './conflict';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { ElementType } from './workspace-element';
 
 describe('PersistenceService', () => {
   let serviceConfig: PersistenceServiceConfig;
@@ -71,7 +72,7 @@ describe('PersistenceService', () => {
     const expectedResult = new Conflict(message);
 
     // when
-    persistenceService.createResource(tclFilePath, 'file')
+    persistenceService.createResource(tclFilePath, ElementType.File)
 
     // then
     .then((actualResult) => expect(actualResult).toEqual(expectedResult));

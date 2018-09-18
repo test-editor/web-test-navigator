@@ -5,7 +5,7 @@ import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, spy, verify } from 'ts-mockito/lib/ts-mockito';
+import { instance, mock, when, verify } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
