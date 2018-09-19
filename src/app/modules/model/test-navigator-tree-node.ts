@@ -52,6 +52,10 @@ export class TestNavigatorTreeNode implements TreeNode {
     return this.workspaceElement.name;
   }
 
+  set name(displayName: string) {
+    this.workspaceElement.name = displayName;
+  }
+
   get type(): ElementType {
     return this.workspaceElement.type;
   }

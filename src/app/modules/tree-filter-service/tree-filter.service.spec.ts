@@ -76,4 +76,16 @@ describe('TreeFilterService', () => {
 
   }));
 
+  it('should set the display name of the root to "workspace"', inject([TreeFilterService], async (service: TreeFilterService) => {
+    // given
+    when(mockPersistenceService.listFiles()).thenResolve(sampleWorkspace);
+
+    // when
+    const actualTestFile = await service.listTreeNodes();
+
+    // then
+    expect(actualTestFile.id).toEqual('src/test/java');
+    expect(actualTestFile.name).toEqual('Workspace');
+  }));
+
 });

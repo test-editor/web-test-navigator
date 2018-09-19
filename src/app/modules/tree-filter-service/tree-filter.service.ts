@@ -12,7 +12,10 @@ export class TreeFilterService {
   async listTreeNodes(): Promise<TestNavigatorTreeNode> {
     return this.persistenceService.listFiles().then(
       (root) => {
-        return new TestNavigatorTreeNode(this.findFirst(root, (element) => element.path === TreeFilterService.ROOT_PATH));
+        const testNavigatorRoot = new TestNavigatorTreeNode(
+          this.findFirst(root, (element) => element.path === TreeFilterService.ROOT_PATH));
+        testNavigatorRoot.name = 'Workspace';
+        return testNavigatorRoot;
       });
   }
 
