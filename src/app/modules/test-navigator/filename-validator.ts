@@ -1,6 +1,6 @@
 export class FilenameValidator {
 
-  static readonly onlyValidChars = /^[^\\:\*"\|$#%<>/]+$/u;
+  static readonly onlyValidChars = new RegExp('^[^:*|$#%<>"\/\\\\]+$');
   static readonly invalidCharsMessage = 'disallowed characters are \\ : * " | $ # % < > /';
   static readonly tooLongMessage = 'file and folder names must not exceed 255 characters';
 
