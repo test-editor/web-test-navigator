@@ -164,4 +164,15 @@ describe('TestNavigatorTreeNode', () => {
     expect(actualChildren).toEqual([]);
   });
 
+  it('changes icon css class when the name changes to a different file extension / file type', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode({ name: 'test.tcl', path: 'path/to/test.tcl', type: ElementType.File, children: undefined});
+    expect(treeNode.leafCssClasses).toEqual('fas fa-file tcl-file-color');
+
+    // when
+    treeNode.rename('path/to/spec.tsl', 'spec.tsl');
+
+    // then
+    expect(treeNode.leafCssClasses).toEqual('fas fa-file tsl-file-color');
+  });
 });
