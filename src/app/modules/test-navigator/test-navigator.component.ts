@@ -14,7 +14,7 @@ import { isConflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
-import { PathValidator } from './path-validator';
+import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
 
 @Component({
@@ -54,7 +54,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   constructor(private filteredTreeService: TreeFilterService,
               private messagingService: MessagingService,
               private indexService: IndexService,
-              private pathValidator: PathValidator,
+              private filenameValidator: FilenameValidator,
               private persistenceService: PersistenceService) {
   }
 
@@ -243,8 +243,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   private validateName(newName: string, type: ElementType): { valid: boolean, message?: string } {
     let result: { valid: boolean, message?: string } = { valid: true };
-    if (!this.pathValidator.isValid(newName)) {
-      result = { valid: false, message: this.pathValidator.getMessage(newName) };
+    if (!this.filenameValidator.isValid(newName)) {
+      result = { valid: false, message: this.filenameValidator.getMessage(newName) };
     }
     if (!filterFor(this.filterState, { type: type, id: newName })) {
       result = { valid: false, message: 'invalid (or currently filtered) file extension' };

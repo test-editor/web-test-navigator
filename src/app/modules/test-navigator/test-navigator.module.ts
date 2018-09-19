@@ -14,7 +14,7 @@ import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { ValidationMarkerServiceConfig } from '../validation-marker-service/validation-marker.service.config';
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
-import { PathValidator } from './path-validator';
+import { FilenameValidator } from './filename-validator';
 import { TestNavigatorComponent } from './test-navigator.component';
 import { TreeViewerModule } from '@testeditor/testeditor-commons';
 
@@ -38,7 +38,7 @@ export class TestNavigatorModule {
       ngModule: TestNavigatorModule,
       providers: [
         PersistenceService,
-        PathValidator,
+        FilenameValidator,
         { provide: IndexService, useClass: XtextIndexService },
         { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
         TreeFilterService,

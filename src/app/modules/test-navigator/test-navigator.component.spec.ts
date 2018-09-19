@@ -15,7 +15,7 @@ import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
-import { PathValidator } from './path-validator';
+import { FilenameValidator } from './filename-validator';
 import { TestNavigatorComponent } from './test-navigator.component';
 
 describe('TestNavigatorComponent', () => {
@@ -23,13 +23,13 @@ describe('TestNavigatorComponent', () => {
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let messagingService: MessagingService;
   let sidenav: DebugElement;
-  let mockPathValidator: PathValidator;
+  let mockFilenameValidator: FilenameValidator;
 
   beforeEach(async(() => {
     const mockPersistenceService = mock(PersistenceService);
     const mockIndexService = mock(IndexService);
     const mockValidationService = mock(ValidationMarkerService);
-    mockPathValidator = mock(PathValidator);
+    mockFilenameValidator = mock(FilenameValidator);
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
@@ -39,7 +39,7 @@ describe('TestNavigatorComponent', () => {
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
       providers: [ HttpProviderService, TreeFilterService,
-                   { provide: PathValidator, useValue: instance(mockPathValidator) },
+                   { provide: FilenameValidator, useValue: instance(mockFilenameValidator) },
                    { provide: PersistenceService, useValue: instance(mockPersistenceService) },
                    { provide: IndexService, useValue: instance(mockIndexService) },
                    { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]
@@ -204,7 +204,7 @@ describe('TestNavigatorComponent', () => {
     flush();
   }));
 
-  it('validates the input using PathValidator during a new element request', async () => {
+  it('validates the input using FilenameValidator during a new element request', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -219,7 +219,7 @@ describe('TestNavigatorComponent', () => {
     inputBox.triggerEventHandler('keyup', {});
 
     // then
-    verify(mockPathValidator.isValid('newElementName')).called();
+    verify(mockFilenameValidator.isValid('newElementName')).called();
     expect().nothing();
   });
 

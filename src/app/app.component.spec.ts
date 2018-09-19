@@ -11,7 +11,7 @@ import { IndexServiceConfig } from './modules/index-service/index.service.config
 import { XtextIndexService } from './modules/index-service/xtext-index.service';
 import { PersistenceService } from './modules/persistence-service/persistence.service';
 import { PersistenceServiceConfig } from './modules/persistence-service/persistence.service.config';
-import { PathValidator } from './modules/test-navigator/path-validator';
+import { FilenameValidator } from './modules/test-navigator/filename-validator';
 import { TestNavigatorComponent } from './modules/test-navigator/test-navigator.component';
 import { TreeFilterService } from './modules/tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
@@ -37,7 +37,7 @@ describe('AppComponent', () => {
         HttpProviderService,
         TreeFilterService,
         PersistenceService,
-        PathValidator,
+        FilenameValidator,
         { provide: ValidationMarkerService, useClass: XtextDefaultValidationMarkerService },
         { provide: IndexService, useClass: XtextIndexService },
         { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig },

@@ -1,6 +1,8 @@
-import { PathValidator } from './path-validator';
+import { FilenameValidator } from './filename-validator';
 
 const longestAcceptableFileName = 'x'.repeat(255);
+
+const disallowedChars = ['\\', ':', '*', '"', '|', '$', '#', '%', '<', '>', '/'];
 
 const cases = [
   {
@@ -10,8 +12,8 @@ const cases = [
   },
   {
     input: 'simple/path/test.txt',
-    expected: true,
-    description: 'should allow a simple path'
+    expected: false,
+    description: 'should prevent paths'
   },
   {
     input: '../test.txt',
@@ -24,28 +26,32 @@ const cases = [
     description: 'should prevent dot segment in between'
   },
   {
-    input: `some/path/${longestAcceptableFileName}`,
+    input: longestAcceptableFileName,
     expected: true,
     description: 'should allow 255 character file names'
   },
   {
-    input: `some/path/x${longestAcceptableFileName}`,
+    input: `x${longestAcceptableFileName}`,
     expected: false,
     description: 'should prevent 256 character file names'
   },
   {
-    input: `some/path/ ${longestAcceptableFileName}`,
+    input: ` ${longestAcceptableFileName}`,
     expected: false,
     description: 'should prevent 256 character file names with space included'
   }
-];
+].concat(disallowedChars.map((char) => ({
+  input: `filename with ${char} symbol`,
+  expected: false,
+  description: `should prevent file names with ${char} in them`
+})));
 
-describe('PathValidator', () => {
+describe('FilnameValidator', () => {
 
-  let validator: PathValidator;
+  let validator: FilenameValidator;
 
   beforeEach(() => {
-    validator = new PathValidator();
+    validator = new FilenameValidator();
   });
 
   cases.forEach(value => {
