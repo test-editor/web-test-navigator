@@ -87,4 +87,25 @@ describe('SubscriptionMap', () => {
     verify(mockSubscription2.unsubscribe()).never();
     expect().nothing();
   });
+
+  it('should unsubscribe all on clear', () => {
+    // given
+    const testKey = 'testKey';
+    const otherKey = 'otherKey';
+    const mockSubscription1 = mock(Subscription);
+    const mockSubscription2 = mock(Subscription);
+    const mockSubscription3 = mock(Subscription);
+    const subscriptionMap = new SubscriptionMap<string>();
+    subscriptionMap.add(testKey, instance(mockSubscription1));
+    subscriptionMap.add(testKey, instance(mockSubscription2));
+    subscriptionMap.add(otherKey, instance(mockSubscription3));
+
+    // when
+    subscriptionMap.clear();
+
+    // then
+    verify(mockSubscription1.unsubscribe()).called();
+    verify(mockSubscription3.unsubscribe()).called();
+    expect().nothing();
+  });
 });

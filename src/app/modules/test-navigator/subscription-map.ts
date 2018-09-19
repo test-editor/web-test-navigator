@@ -17,4 +17,9 @@ export class SubscriptionMap<T> {
       this.subscriptions.delete(key);
     }
   }
+
+  clear() {
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+    this.subscriptions.clear();
+  }
 }

@@ -71,6 +71,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.treeSelectionChangeSubscription.unsubscribe();
     this.testExecutionSubscription.unsubscribe();
     this.testExecutionFailedSubscription.unsubscribe();
+    this.openFilesSubscriptions.clear();
   }
 
   private setupTestExecutionListener(): void {
