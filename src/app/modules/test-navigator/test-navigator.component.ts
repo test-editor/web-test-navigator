@@ -26,7 +26,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   static readonly NOTIFICATION_TIMEOUT_MILLIS = 4000;
   private readonly WORKSPACE_LOAD_RETRY_COUNT = 3;
   private fileSavedSubscription: Subscription;
-  public refreshClassValue  = '';
+  public refreshClassValue = '';
   private selectedNode: TestNavigatorTreeNode = null;
   private treeSelectionChangeSubscription: Subscription;
   private treeDeselectionChangeSubscription: Subscription;
@@ -117,20 +117,20 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.model.forEach((node) => (node as TestNavigatorTreeNode).setVisible(filterFor(state, node)));
   }
 
-/**
-   * listen to events that changed the repository (currently only editor save completed events)
-   * inform index to refresh itself
-   */
+  /**
+     * listen to events that changed the repository (currently only editor save completed events)
+     * inform index to refresh itself
+     */
   private setupRepoChangeListeners(): void {
     this.fileSavedSubscription = this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
       this.refreshIndex();
     });
   }
 
-  private async retryingListTreeNodes (retryCount: number): Promise<TestNavigatorTreeNode> {
+  private async retryingListTreeNodes(retryCount: number): Promise<TestNavigatorTreeNode> {
     try {
       const root = (await this.filteredTreeService.listTreeNodes())
-      .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)) );
+        .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)));
       root.expanded = true;
       return root;
       // this.updateValidationMarkers(root);
@@ -197,45 +197,49 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   /** create a new element within the tree */
   newElement(type: ElementType): void {
-    const contextNode = this.selectedNode;
-    const parentNode = contextNode.type === ElementType.Folder ? contextNode : contextNode.parent;
-    const payload: TreeViewerInputBoxConfig = {
-      indent: contextNode.type === ElementType.Folder,
-      validateName: (newName: string) => this.validateName(newName, type),
-      onConfirm: async (newName: string) => {
-        const newPath = contextNode.getDirectory() + newName;
-        const requestSuccessful = await this.sendCreateRequest(newPath, type);
-        if (requestSuccessful) {
-          /* const newNode = */ parentNode.addChild({children: [], name: newName, path: newPath, type: type });
-          parentNode.expanded = true;
-          // TODO programmatically select newNode
-          if (type === ElementType.File) {
-            this.messagingService.publish(NAVIGATION_OPEN, { name: newName, id: newPath });
+    if (this.selectedNode) {
+      const contextNode = this.selectedNode;
+      const parentNode = contextNode.type === ElementType.Folder ? contextNode : contextNode.parent;
+      const payload: TreeViewerInputBoxConfig = {
+        indent: contextNode.type === ElementType.Folder,
+        validateName: (newName: string) => this.validateName(newName, type),
+        onConfirm: async (newName: string) => {
+          const newPath = contextNode.getDirectory() + newName;
+          const requestSuccessful = await this.sendCreateRequest(newPath, type);
+          if (requestSuccessful) {
+            /* const newNode = */ parentNode.addChild({ children: [], name: newName, path: newPath, type: type });
+            parentNode.expanded = true;
+            // TODO programmatically select newNode
+            if (type === ElementType.File) {
+              this.messagingService.publish(NAVIGATION_OPEN, { name: newName, id: newPath });
+            }
           }
-        }
-        return requestSuccessful;
-      },
-      iconCssClasses: type === ElementType.Folder ? 'fa-folder' : 'fa-file'
-    };
-    this.messagingService.publish(TREE_NODE_CREATE_AT_SELECTED, payload);
+          return requestSuccessful;
+        },
+        iconCssClasses: type === ElementType.Folder ? 'fa-folder' : 'fa-file'
+      };
+      this.messagingService.publish(TREE_NODE_CREATE_AT_SELECTED, payload);
+    }
   }
 
   renameElement(): void {
-    const selectedNode = this.selectedNode;
-    const payload: InputBoxConfig = {
-      validateName: (newName: string) => this.selectedNode.dirty ?
-        { valid: false, message: 'cannot rename dirty files' } : this.validateName(newName, selectedNode.type),
-      onConfirm: async (newName: string) => {
-        const pathElements = selectedNode.id.split('/');
-        const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
-        const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
-        if (requestSuccessful) {
-          selectedNode.rename(newPath, newName);
+    if (this.selectedNode) {
+      const selectedNode = this.selectedNode;
+      const payload: InputBoxConfig = {
+        validateName: (newName: string) => this.selectedNode.dirty ?
+          { valid: false, message: 'cannot rename dirty files' } : this.validateName(newName, selectedNode.type),
+        onConfirm: async (newName: string) => {
+          const pathElements = selectedNode.id.split('/');
+          const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
+          const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
+          if (requestSuccessful) {
+            selectedNode.rename(newPath, newName);
+          }
+          return requestSuccessful;
         }
-        return requestSuccessful;
-      }
-    };
-    this.messagingService.publish(TREE_NODE_RENAME_SELECTED, payload);
+      };
+      this.messagingService.publish(TREE_NODE_RENAME_SELECTED, payload);
+    }
   }
 
   private validateName(newName: string, type: ElementType): { valid: boolean, message?: string } {
@@ -243,7 +247,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     if (!this.pathValidator.isValid(newName)) {
       result = { valid: false, message: this.pathValidator.getMessage(newName) };
     }
-    if (!filterFor(this.filterState, {type: type, id: newName})) {
+    if (!filterFor(this.filterState, { type: type, id: newName })) {
       result = { valid: false, message: 'invalid (or currently filtered) file extension' };
     }
     return result;
@@ -321,9 +325,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   showErrorMessage(errorMessage: string, path: string): void {
     this.errorMessage = errorMessage.replace('\${}', path);
-        setTimeout(() => {
-          this.errorMessage = null;
-        }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
+    setTimeout(() => {
+      this.errorMessage = null;
+    }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
   }
 
   private log(msg: String, payload?) {
