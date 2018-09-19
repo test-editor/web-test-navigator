@@ -226,8 +226,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     if (this.selectedNode) {
       const selectedNode = this.selectedNode;
       const payload: InputBoxConfig = {
-        validateName: (newName: string) => this.selectedNode.dirty ?
-          { valid: false, message: 'cannot rename dirty files' } : this.validateName(newName, selectedNode.type),
+        validateName: (newName: string) => this.validateName(newName, selectedNode.type),
         onConfirm: async (newName: string) => {
           const pathElements = selectedNode.id.split('/');
           const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
@@ -287,6 +286,22 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       this.messagingService.publish(NAVIGATION_RENAMED, { newPath: resultPath, oldPath: oldPath });
     } catch (error) {
       this.log(error, [oldPath, newPath]);
+    }
+    return result;
+  }
+
+  get renameDisabled(): boolean {
+    return !this.selectedNode || this.selectedNode.dirty;
+  }
+
+  get renameHoverText(): string {
+    let result = 'cannot rename: no element selected';
+    if (this.selectedNode) {
+      if (this.selectedNode.dirty) {
+        result = `cannot rename "${this.selectedNode.name}": unsaved changes`;
+      } else {
+        result = `rename "${this.selectedNode.name}`;
+      }
     }
     return result;
   }

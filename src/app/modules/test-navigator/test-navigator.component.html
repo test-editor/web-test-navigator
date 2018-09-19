@@ -3,7 +3,7 @@
     <div class="icons-left">
       <button id="new-file" class="icon fa fa-file" [disabled]="!selectedNode" (click)="newElement('file')" title="create new file"></button>
       <button id="new-folder" class="icon fa fa-folder" [disabled]="!selectedNode" (click)="newElement('folder')" title="create new folder"></button>
-      <button id="rename" class="icon fa fa-edit" [disabled]="!selectedNode" (click)="renameElement()" title="rename element"></button>
+      <button id="rename" class="icon fa fa-edit" [disabled]="renameDisabled" (click)="renameElement()" [title]="renameHoverText"></button>
       <button id="run" class="icon fa fa-play" (click)="run()" [disabled]="!selectionIsExecutable()" title="execute test"></button>
     </div>
     <div class="icons-right">

@@ -223,4 +223,21 @@ describe('TestNavigatorComponent', () => {
     expect().nothing();
   });
 
+  it('disables rename button when selection is dirty', async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    component.model.children[0].dirty = true;
+    fixture.detectChanges();
+    const renameButton = fixture.debugElement.query(By.css('#rename'));
+    const testNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+
+    // when
+    testNode.nativeElement.click(); fixture.detectChanges();
+
+    // then
+    expect(renameButton.nativeElement.disabled).toBeTruthy();
+    expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
+  });
+
 });
