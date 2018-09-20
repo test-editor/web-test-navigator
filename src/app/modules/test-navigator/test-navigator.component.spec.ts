@@ -219,7 +219,7 @@ describe('TestNavigatorComponent', () => {
     inputBox.triggerEventHandler('keyup', {});
 
     // then
-    verify(mockFilenameValidator.isValid('newElementName')).called();
+    verify(mockFilenameValidator.isValidName('newElementName', ElementType.File)).called();
     expect().nothing();
   });
 
