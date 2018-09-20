@@ -223,6 +223,20 @@ describe('TestNavigatorComponent', () => {
     expect().nothing();
   });
 
+  it('disables rename button when root element is selected', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    const renameButton = fixture.debugElement.query(By.css('#rename'));
+    const root = fixture.debugElement.query(By.css('.tree-view-item-key'));
+
+    // when
+    root.nativeElement.click(); fixture.detectChanges();
+
+    // then
+    expect(renameButton.nativeElement.disabled).toBeTruthy();
+  });
+
   it('disables rename button when selection is dirty', async () => {
     // given
     await component.updateModel();

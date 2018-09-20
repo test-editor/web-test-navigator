@@ -291,7 +291,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   get renameDisabled(): boolean {
-    return !this.selectedNode || this.selectedNode.dirty;
+    return !this.selectedNode || this.selectedNode.dirty || this.selectedNode === this.selectedNode.root;
   }
 
   get renameHoverText(): string {
@@ -299,6 +299,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     if (this.selectedNode) {
       if (this.selectedNode.dirty) {
         result = `cannot rename "${this.selectedNode.name}": unsaved changes`;
+      } else if (this.selectedNode === this.selectedNode.root) {
+        result = 'cannot rename the root element';
       } else {
         result = `rename "${this.selectedNode.name}`;
       }
