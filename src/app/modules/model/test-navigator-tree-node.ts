@@ -100,6 +100,22 @@ export class TestNavigatorTreeNode implements TreeNode {
     return newNode;
   }
 
+  /**
+   * removes this node from its parent
+   */
+  remove() {
+    if (this.parent) {
+      this.parent.removeChild(this);
+    }
+  }
+
+  removeChild(child: TestNavigatorTreeNode) {
+    if (this._children) {
+      this._children.splice(this._children.indexOf(child), 1);
+    }
+    this.workspaceElement.children.splice(this.workspaceElement.children.indexOf(child.workspaceElement), 1);
+  }
+
   get leafCssClasses(): string {
     let cssClasses = TestNavigatorTreeNode.unknownFileCssClass;
     if (this.workspaceElement.type === ElementType.Folder) {

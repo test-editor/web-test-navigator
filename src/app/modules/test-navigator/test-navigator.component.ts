@@ -50,7 +50,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     },
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded,
     embeddedButton: (node: TreeNode) => new EmbeddedDeleteButton(
-      new DeleteAction(node, (_node) => this.onDeleteConfirm(_node))),
+      new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))),
   };
 
   constructor(private filteredTreeService: TreeFilterService,
@@ -358,12 +358,13 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     }
   }
 
-  async onDeleteConfirm(nodeToDelete: TreeNode): Promise<void> {
+  async onDeleteConfirm(nodeToDelete: TestNavigatorTreeNode): Promise<void> {
     try {
       const result = await this.persistenceService.deleteResource(nodeToDelete.id);
       if (isConflict(result)) {
         this.handleDeleteFailed(result.message);
       } else {
+        nodeToDelete.remove();
         this.messagingService.publish(NAVIGATION_DELETED, nodeToDelete);
       }
     } catch (error) {

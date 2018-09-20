@@ -5,7 +5,7 @@ import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, verify } from 'ts-mockito/lib/ts-mockito';
+import { instance, mock, when, verify, anyString } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -24,9 +24,10 @@ describe('TestNavigatorComponent', () => {
   let messagingService: MessagingService;
   let sidenav: DebugElement;
   let mockFilenameValidator: FilenameValidator;
+  let mockPersistenceService: PersistenceService;
 
   beforeEach(async(() => {
-    const mockPersistenceService = mock(PersistenceService);
+    mockPersistenceService = mock(PersistenceService);
     const mockIndexService = mock(IndexService);
     const mockValidationService = mock(ValidationMarkerService);
     mockFilenameValidator = mock(FilenameValidator);
@@ -35,6 +36,7 @@ describe('TestNavigatorComponent', () => {
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
         {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []}
     ]});
+    when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
     TestBed.configureTestingModule({
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
@@ -253,5 +255,50 @@ describe('TestNavigatorComponent', () => {
     expect(renameButton.nativeElement.disabled).toBeTruthy();
     expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
   });
+
+  it('removes element whose delete button was clicked from the tree, after user confirmed and backend responds with success',
+    fakeAsync(async () => {
+    // given
+    await component.updateModel();
+    const elementBeingDeleted = component.model.children[0];
+    component.model.expanded = true;
+    fixture.detectChanges();
+    const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
+    deleteButton.nativeElement.click();
+    fixture.detectChanges();
+    const confirmButton = fixture.debugElement.query(By.css('.confirm-action-confirm-button'));
+
+    // when
+    confirmButton.nativeElement.click();
+    tick(); fixture.detectChanges();
+
+    // then
+    expect(component.model.children.length).toEqual(1);
+    expect(component.model.children[0].name).not.toEqual(elementBeingDeleted.name);
+  }));
+
+  it('retains element whose delete button was clicked from the tree, if user confirmed but backend responded with failure',
+    fakeAsync(async () => {
+    // given
+    when(mockPersistenceService.deleteResource(anyString())).thenReject(new Error('deletion unsuccessul'));
+    await component.updateModel();
+    const elementBeingDeleted = component.model.children[0];
+    component.model.expanded = true;
+    fixture.detectChanges();
+    const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
+    deleteButton.nativeElement.click();
+    fixture.detectChanges();
+    const confirmButton = fixture.debugElement.query(By.css('.confirm-action-confirm-button'));
+
+    // when
+    confirmButton.nativeElement.click();
+    tick(); fixture.detectChanges();
+
+    // then
+    expect(component.model.children.length).toEqual(2);
+    expect(component.model.children[0].name).toEqual(elementBeingDeleted.name);
+    expect(fixture.debugElement.query(By.css('#errorMessage')).nativeElement.innerText).toEqual('Error while deleting element!');
+    flush();
+  }));
 
 });
