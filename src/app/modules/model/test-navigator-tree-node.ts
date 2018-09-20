@@ -14,19 +14,14 @@ export class TestNavigatorTreeNode implements TreeNode {
   private _children: TestNavigatorTreeNode[];
   collapsedCssClasses = 'fas fa-chevron-right';
   expandedCssClasses = 'fas fa-chevron-down';
-  leafCssClasses = '';
   cssClasses = '';
   expanded = undefined;
   parent: TestNavigatorTreeNode;
   dirty = false;
 
   constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
-    switch (workspaceElement.type) {
-      case ElementType.File: this.leafCssClasses = this.leafCssClassesForFile(workspaceElement.name); break;
-      case ElementType.Folder: {
-        this.leafCssClasses = TestNavigatorTreeNode.folderCssClass;
-        this.expanded = false;
-      }
+    if (workspaceElement.type === ElementType.Folder) {
+      this.expanded = false;
     }
     if (parent === undefined) {
       this.parent = null;
@@ -101,17 +96,18 @@ export class TestNavigatorTreeNode implements TreeNode {
     return newNode;
   }
 
-  private leafCssClassesForFile(fileName: string): string {
+  get leafCssClasses(): string {
     let cssClasses = TestNavigatorTreeNode.unknownFileCssClass;
-
-    // get file extension, or empty string if file has no extension
-    // https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript#answer-12900504
-    const extension = fileName.slice((Math.max(0, fileName.lastIndexOf('.')) || Infinity) + 1);
-
-    if ((extension && TestNavigatorTreeNode.extensionToCssClass[extension])) {
-      cssClasses = TestNavigatorTreeNode.extensionToCssClass[extension];
+    if (this.workspaceElement.type === ElementType.Folder) {
+      cssClasses = TestNavigatorTreeNode.folderCssClass;
+    } else {
+      // get file extension, or empty string if file has no extension
+      // https://stackoverflow.com/questions/190852/how-can-i-get-file-extensions-with-javascript#answer-12900504
+      const extension = this.id.slice((Math.max(0, this.id.lastIndexOf('.')) || Infinity) + 1);
+      if ((extension && TestNavigatorTreeNode.extensionToCssClass[extension])) {
+        cssClasses = TestNavigatorTreeNode.extensionToCssClass[extension];
+      }
     }
-
     return cssClasses;
   }
 
