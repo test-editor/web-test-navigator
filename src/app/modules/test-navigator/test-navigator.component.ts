@@ -243,7 +243,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   private validateName(newName: string, type: ElementType): { valid: boolean, message?: string } {
     let result: { valid: boolean, message?: string } = { valid: true };
-    if (!this.filenameValidator.isValid(newName)) {
+    if (!this.filenameValidator.isValidName(newName, type)) {
       result = { valid: false, message: this.filenameValidator.getMessage(newName) };
     }
     if (!filterFor(this.filterState, { type: type, id: newName })) {
