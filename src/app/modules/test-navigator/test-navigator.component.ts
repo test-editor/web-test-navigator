@@ -1,15 +1,21 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { testNavigatorFilter, filterFor } from '../model/filters';
-import { TreeNode, TreeViewerConfig, TREE_NODE_SELECTED, TREE_NODE_DESELECTED } from '@testeditor/testeditor-commons';
+import { InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
+  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
-import { WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_EXECUTE_REQUEST, NAVIGATION_OPEN } from '../event-types-out';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED,
+  TEST_EXECUTE_REQUEST, WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { FilterState } from '../filter-bar/filter-bar.component';
-import { ElementType } from '../persistence-service/workspace-element';
 import { IndexService } from '../index-service/index.service';
+import { filterFor, testNavigatorFilter } from '../model/filters';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { isConflict } from '../persistence-service/conflict';
+import { PersistenceService } from '../persistence-service/persistence.service';
+import { ElementType } from '../persistence-service/workspace-element';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+import { FilenameValidator } from './filename-validator';
+import { SubscriptionMap } from './subscription-map';
 
 @Component({
   selector: 'app-test-navigator',
@@ -20,16 +26,18 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   static readonly NOTIFICATION_TIMEOUT_MILLIS = 4000;
   private readonly WORKSPACE_LOAD_RETRY_COUNT = 3;
   private fileSavedSubscription: Subscription;
-  public refreshClassValue  = '';
-  private tclCurrentlySelected: TestNavigatorTreeNode = null;
+  public refreshClassValue = '';
+  private selectedNode: TestNavigatorTreeNode = null;
   private treeSelectionChangeSubscription: Subscription;
   private treeDeselectionChangeSubscription: Subscription;
   private testExecutionSubscription: Subscription;
   private testExecutionFailedSubscription: Subscription;
+  private openFilesSubscriptions = new SubscriptionMap<TestNavigatorTreeNode>();
   errorMessage: string;
   notification: string;
 
   model: TestNavigatorTreeNode;
+  filterState: FilterState = { aml: false, tcl: false, tsl: false };
   treeConfig: TreeViewerConfig = {
     onClick: () => null,
     onDoubleClick: (node: TreeNode) => {
@@ -37,8 +45,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       if (testNavNode.type === ElementType.Folder) {
         node.expanded = !node.expanded;
       } else {
-        this.messagingService.publish(NAVIGATION_OPEN, node);
-        this.log('published NAVIGATION_OPEN', node);
+        this.open(testNavNode);
       }
     },
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded
@@ -46,7 +53,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   constructor(private filteredTreeService: TreeFilterService,
               private messagingService: MessagingService,
-              private indexService: IndexService) {
+              private indexService: IndexService,
+              private filenameValidator: FilenameValidator,
+              private persistenceService: PersistenceService) {
   }
 
   ngOnInit() {
@@ -60,6 +69,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.fileSavedSubscription.unsubscribe();
     this.treeDeselectionChangeSubscription.unsubscribe();
     this.treeSelectionChangeSubscription.unsubscribe();
+    this.testExecutionSubscription.unsubscribe();
+    this.testExecutionFailedSubscription.unsubscribe();
+    this.openFilesSubscriptions.clear();
   }
 
   private setupTestExecutionListener(): void {
@@ -81,8 +93,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
     this.treeDeselectionChangeSubscription = this.messagingService.subscribe(TREE_NODE_DESELECTED, (node) => {
       this.log('received TREE_NODE_DESELECTED', node);
-      if (node === this.tclCurrentlySelected) {
-        this.tclCurrentlySelected = null;
+      if (node === this.selectedNode) {
+        this.selectedNode = null;
       }
     });
   }
@@ -101,23 +113,24 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   onFiltersChanged(state: FilterState) {
+    this.filterState = state;
     this.model.forEach((node) => (node as TestNavigatorTreeNode).setVisible(filterFor(state, node)));
   }
 
-/**
-   * listen to events that changed the repository (currently only editor save completed events)
-   * inform index to refresh itself
-   */
+  /**
+     * listen to events that changed the repository (currently only editor save completed events)
+     * inform index to refresh itself
+     */
   private setupRepoChangeListeners(): void {
     this.fileSavedSubscription = this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
       this.refreshIndex();
     });
   }
 
-  private async retryingListTreeNodes (retryCount: number): Promise<TestNavigatorTreeNode> {
+  private async retryingListTreeNodes(retryCount: number): Promise<TestNavigatorTreeNode> {
     try {
       const root = (await this.filteredTreeService.listTreeNodes())
-      .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)) );
+        .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)));
       root.expanded = true;
       return root;
       // this.updateValidationMarkers(root);
@@ -169,27 +182,138 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     await this.updateModel();
   }
 
+  private open(node: TestNavigatorTreeNode) {
+    this.openFilesSubscriptions.remove(node);
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload) => {
+      if (node.id === payload.path) {
+        node.dirty = payload.dirty;
+      }
+    }));
+
+    this.messagingService.publish(NAVIGATION_OPEN, node);
+    this.log('published NAVIGATION_OPEN', node);
+  }
+
+
   /** create a new element within the tree */
-  newElement(type: string): void {
-    // TODO: put TREE_NODE_CREATE_NEW on the bus to initiate creation of new file/folder
-    // make sure the (name) validator heeds relevant filter settings
-    // add this new element to the tree
-    // create this new element on the backend (if it fails, remove element from the tree again)
-    // if type is a file, open it right away (issue a NAVIGATION_OPEN (or something alike) command)
+  newElement(type: ElementType): void {
+    if (this.selectedNode) {
+      const contextNode = this.selectedNode;
+      const parentNode = contextNode.type === ElementType.Folder ? contextNode : contextNode.parent;
+      const payload: TreeViewerInputBoxConfig = {
+        indent: contextNode.type === ElementType.Folder,
+        validateName: (newName: string) => this.validateName(newName, type),
+        onConfirm: async (newName: string) => {
+          const newPath = contextNode.getDirectory() + newName;
+          const requestSuccessful = await this.sendCreateRequest(newPath, type);
+          if (requestSuccessful) {
+            /* const newNode = */ parentNode.addChild({ children: [], name: newName, path: newPath, type: type });
+            parentNode.expanded = true;
+            // TODO programmatically select newNode
+            if (type === ElementType.File) {
+              this.messagingService.publish(NAVIGATION_OPEN, { name: newName, id: newPath });
+            }
+          }
+          return requestSuccessful;
+        },
+        iconCssClasses: type === ElementType.Folder ? 'fa-folder' : 'fa-file'
+      };
+      this.messagingService.publish(TREE_NODE_CREATE_AT_SELECTED, payload);
+    }
+  }
+
+  renameElement(): void {
+    if (this.selectedNode) {
+      const selectedNode = this.selectedNode;
+      const payload: InputBoxConfig = {
+        validateName: (newName: string) => this.validateName(newName, selectedNode.type),
+        onConfirm: async (newName: string) => {
+          const pathElements = selectedNode.id.split('/');
+          const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
+          const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
+          if (requestSuccessful) {
+            selectedNode.rename(newPath, newName);
+          }
+          return requestSuccessful;
+        }
+      };
+      this.messagingService.publish(TREE_NODE_RENAME_SELECTED, payload);
+    }
+  }
+
+  private validateName(newName: string, type: ElementType): { valid: boolean, message?: string } {
+    let result: { valid: boolean, message?: string } = { valid: true };
+    if (!this.filenameValidator.isValid(newName)) {
+      result = { valid: false, message: this.filenameValidator.getMessage(newName) };
+    }
+    if (!filterFor(this.filterState, { type: type, id: newName })) {
+      result = { valid: false, message: 'invalid (or currently filtered) file extension' };
+    }
+    return result;
+  }
+
+  private async sendCreateRequest(newPath: string, type: ElementType): Promise<boolean> {
+    let result = false;
+    try {
+      const response = await this.persistenceService.createResource(newPath, type);
+      let createdPath: string;
+      if (isConflict(response)) {
+        this.errorMessage = response.message;
+        createdPath = newPath;
+      } else {
+        createdPath = response;
+        result = true;
+      }
+      this.messagingService.publish(NAVIGATION_CREATED, { path: createdPath });
+    } catch (error) {
+      this.log(error, [newPath, type]);
+    }
+    return result;
+  }
+
+  private async sendRenameRequest(newPath: string, oldPath: string): Promise<boolean> {
+    let result = false;
+    try {
+      const response = await this.persistenceService.renameResource(newPath, oldPath);
+      let resultPath: string;
+      if (isConflict(response)) {
+        this.errorMessage = response.message;
+        resultPath = oldPath;
+      } else {
+        resultPath = response;
+        result = true;
+      }
+      this.messagingService.publish(NAVIGATION_RENAMED, { newPath: resultPath, oldPath: oldPath });
+    } catch (error) {
+      this.log(error, [oldPath, newPath]);
+    }
+    return result;
+  }
+
+  get renameDisabled(): boolean {
+    return !this.selectedNode || this.selectedNode.dirty;
+  }
+
+  get renameHoverText(): string {
+    let result = 'cannot rename: no element selected';
+    if (this.selectedNode) {
+      if (this.selectedNode.dirty) {
+        result = `cannot rename "${this.selectedNode.name}": unsaved changes`;
+      } else {
+        result = `rename "${this.selectedNode.name}`;
+      }
+    }
+    return result;
   }
 
   /** controls availability of test execution button */
   selectionIsExecutable(): boolean {
-    return this.tclCurrentlySelected != null;
+    return this.selectedNode && this.selectedNode.isTclFile();
   }
 
   select(node: TestNavigatorTreeNode) {
     if (this.model.sameTree(node)) {
-      if (node.isTclFile()) {
-        this.tclCurrentlySelected = node;
-      } else {
-        this.tclCurrentlySelected = null;
-      }
+      this.selectedNode = node;
     }
   }
 
@@ -199,7 +323,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   run(): void {
     if (this.selectionIsExecutable()) {
-      this.messagingService.publish(TEST_EXECUTE_REQUEST, this.tclCurrentlySelected.id);
+      this.messagingService.publish(TEST_EXECUTE_REQUEST, this.selectedNode.id);
     } else {
       this.log('WARNING: trying to execute test, but no test case file is selected.');
     }
@@ -216,9 +340,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   showErrorMessage(errorMessage: string, path: string): void {
     this.errorMessage = errorMessage.replace('\${}', path);
-        setTimeout(() => {
-          this.errorMessage = null;
-        }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
+    setTimeout(() => {
+      this.errorMessage = null;
+    }, TestNavigatorComponent.NOTIFICATION_TIMEOUT_MILLIS);
   }
 
   private log(msg: String, payload?) {

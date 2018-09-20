@@ -1,16 +1,11 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { WorkspaceElement } from './workspace-element';
+import { HttpErrorResponse } from '@angular/common/http';
+import { WorkspaceElement, ElementType } from './workspace-element';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { Conflict } from './conflict';
 import 'rxjs/add/operator/toPromise';
-import { MessagingService } from '@testeditor/messaging-service';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
-import { HttpResponse } from 'selenium-webdriver/http';
 
-// code duplication with test execution service and test-editor-web, removal planned with next refactoring
-const HTTP_CLIENT_NEEDED = 'httpClient.needed';
-const HTTP_CLIENT_SUPPLIED = 'httpClient.supplied';
 
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_CONFLICT = 409;
@@ -20,7 +15,7 @@ export abstract class AbstractPersistenceService {
   abstract listFiles(): Promise<WorkspaceElement>;
   abstract renameResource(newPath: string, oldPath: string): Promise<string | Conflict>;
   abstract deleteResource(path: string): Promise<string | Conflict>;
-  abstract createResource(path: string, type: string): Promise<string | Conflict>;
+  abstract createResource(path: string, type: ElementType): Promise<string | Conflict>;
   abstract getBinaryResource(path: string): Promise<Blob>;
 }
 
@@ -59,7 +54,7 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
-  async createResource(path: string, type: string): Promise<string | Conflict> {
+  async createResource(path: string, type: ElementType): Promise<string | Conflict> {
     const client = await this.httpProvider.getHttpClient();
     try {
       return (await client.post(this.getURL(path), '', { observe: 'response', responseType: 'text', params: { type: type } })

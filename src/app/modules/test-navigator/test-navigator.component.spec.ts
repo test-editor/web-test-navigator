@@ -1,34 +1,35 @@
-import { FormsModule } from '@angular/forms';
-import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when } from 'ts-mockito/lib/ts-mockito';
-import { FilterBarComponent } from '../filter-bar/filter-bar.component';
-import { async, ComponentFixture, TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
-import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
-import { PersistenceServiceConfig } from '../persistence-service/persistence.service.config';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
-import { PersistenceService } from '../persistence-service/persistence.service';
-import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
-import { TestNavigatorComponent } from './test-navigator.component';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { ElementType } from '../persistence-service/workspace-element';
-import { By } from '@angular/platform-browser';
 import { DebugElement } from '@angular/core';
+import { async, ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { By } from '@angular/platform-browser';
+import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
+import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
+import { ButtonsModule } from 'ngx-bootstrap/buttons';
+import { instance, mock, when, verify } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
+import { FilterBarComponent } from '../filter-bar/filter-bar.component';
+import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
-import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { PersistenceService } from '../persistence-service/persistence.service';
+import { ElementType } from '../persistence-service/workspace-element';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
+import { FilenameValidator } from './filename-validator';
+import { TestNavigatorComponent } from './test-navigator.component';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let messagingService: MessagingService;
   let sidenav: DebugElement;
+  let mockFilenameValidator: FilenameValidator;
 
   beforeEach(async(() => {
     const mockPersistenceService = mock(PersistenceService);
     const mockIndexService = mock(IndexService);
     const mockValidationService = mock(ValidationMarkerService);
+    mockFilenameValidator = mock(FilenameValidator);
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
@@ -38,6 +39,7 @@ describe('TestNavigatorComponent', () => {
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
       providers: [ HttpProviderService, TreeFilterService,
+                   { provide: FilenameValidator, useValue: instance(mockFilenameValidator) },
                    { provide: PersistenceService, useValue: instance(mockPersistenceService) },
                    { provide: IndexService, useValue: instance(mockIndexService) },
                    { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]
@@ -201,5 +203,41 @@ describe('TestNavigatorComponent', () => {
 
     flush();
   }));
+
+  it('validates the input using FilenameValidator during a new element request', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    const newFileButton = fixture.debugElement.query(By.css('#new-file'));
+    const contextElement = fixture.debugElement.query(By.css('.tree-view-item-key'));
+    contextElement.nativeElement.click(); fixture.detectChanges();
+    newFileButton.nativeElement.click(); fixture.detectChanges();
+    const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
+    inputBox.nativeElement.value = 'newElementName';
+
+    // when
+    inputBox.triggerEventHandler('keyup', {});
+
+    // then
+    verify(mockFilenameValidator.isValid('newElementName')).called();
+    expect().nothing();
+  });
+
+  it('disables rename button when selection is dirty', async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    component.model.children[0].dirty = true;
+    fixture.detectChanges();
+    const renameButton = fixture.debugElement.query(By.css('#rename'));
+    const testNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+
+    // when
+    testNode.nativeElement.click(); fixture.detectChanges();
+
+    // then
+    expect(renameButton.nativeElement.disabled).toBeTruthy();
+    expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
+  });
 
 });

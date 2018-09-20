@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
-import { HttpClient } from '@angular/common/http';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 
 @Injectable()
