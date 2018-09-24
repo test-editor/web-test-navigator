@@ -282,7 +282,7 @@ describe('TestNavigatorComponent', () => {
     // given
     when(mockPersistenceService.deleteResource(anyString())).thenReject(new Error('deletion unsuccessul'));
     await component.updateModel();
-    const elementBeingDeleted = component.model.children[0];
+    const elementFailingToBeDeleted = component.model.children[0];
     component.model.expanded = true;
     fixture.detectChanges();
     const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
@@ -296,7 +296,7 @@ describe('TestNavigatorComponent', () => {
 
     // then
     expect(component.model.children.length).toEqual(2);
-    expect(component.model.children[0].name).toEqual(elementBeingDeleted.name);
+    expect(component.model.children[0].name).toEqual(elementFailingToBeDeleted.name);
     expect(fixture.debugElement.query(By.css('#errorMessage')).nativeElement.innerText).toEqual('Error while deleting element!');
     flush();
   }));
