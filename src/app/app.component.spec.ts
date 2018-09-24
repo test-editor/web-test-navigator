@@ -1,7 +1,7 @@
 import { async, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MessagingModule } from '@testeditor/messaging-service';
-import { TreeViewerModule } from '@testeditor/testeditor-commons';
+import { TreeViewerModule, IndicatorFieldSetup } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { AppComponent } from './app.component';
 import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
@@ -17,6 +17,7 @@ import { TreeFilterService } from './modules/tree-filter-service/tree-filter.ser
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
 import { ValidationMarkerServiceConfig } from './modules/validation-marker-service/validation-marker.service.config';
 import { XtextDefaultValidationMarkerService } from './modules/validation-marker-service/xtext-default-validation-marker.service';
+import { TestNavigatorFieldSetup } from './modules/test-navigator/test-navigator-field-setup';
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
@@ -42,7 +43,8 @@ describe('AppComponent', () => {
         { provide: IndexService, useClass: XtextIndexService },
         { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig },
         { provide: IndexServiceConfig, useValue: indexServiceConfig  },
-        { provide: ValidationMarkerServiceConfig, useValue: validationServiceConfig }
+        { provide: ValidationMarkerServiceConfig, useValue: validationServiceConfig },
+        { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup }
       ]
     }).compileComponents();
   }));

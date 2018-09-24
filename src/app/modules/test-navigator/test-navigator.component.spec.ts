@@ -2,9 +2,9 @@ import { async, ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angul
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { MessagingModule } from '@testeditor/messaging-service';
-import { TreeViewerModule } from '@testeditor/testeditor-commons';
+import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, verify, anyString } from 'ts-mockito/lib/ts-mockito';
+import { anyString, instance, mock, verify, when } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -14,6 +14,7 @@ import { ElementType } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { FilenameValidator } from './filename-validator';
+import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
 
 describe('TestNavigatorComponent', () => {
@@ -40,7 +41,8 @@ describe('TestNavigatorComponent', () => {
                    { provide: FilenameValidator, useValue: instance(mockFilenameValidator) },
                    { provide: PersistenceService, useValue: instance(mockPersistenceService) },
                    { provide: IndexService, useValue: instance(mockIndexService) },
-                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]
+                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) },
+                   { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup } ]
     })
       .compileComponents();
   }));
