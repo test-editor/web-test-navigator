@@ -1,16 +1,14 @@
-import { DebugElement } from '@angular/core';
 import { async, ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
-import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
-import { TreeViewerModule, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
+import { MessagingModule } from '@testeditor/messaging-service';
+import { TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { instance, mock, when, verify, anyString } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
@@ -21,8 +19,6 @@ import { TestNavigatorComponent } from './test-navigator.component';
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
-  let messagingService: MessagingService;
-  let sidenav: DebugElement;
   let mockFilenameValidator: FilenameValidator;
   let mockPersistenceService: PersistenceService;
 
@@ -52,9 +48,7 @@ describe('TestNavigatorComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(TestNavigatorComponent);
     component = fixture.componentInstance;
-    messagingService = TestBed.get(MessagingService);
     fixture.detectChanges();
-    sidenav = fixture.debugElement.query(By.css('.sidenav'));
   });
 
   it('should create', () => {
