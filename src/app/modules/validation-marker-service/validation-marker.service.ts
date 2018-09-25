@@ -1,4 +1,3 @@
-import { WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
 import { Injectable } from '@angular/core';
 import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';

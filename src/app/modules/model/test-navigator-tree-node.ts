@@ -1,6 +1,6 @@
 import { TreeNode } from '@testeditor/testeditor-commons';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
-import { ValidationMarkerSummary, ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
+import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
 export class TestNavigatorTreeNode implements TreeNode {
   private static readonly hideCssClass = 'hidden';

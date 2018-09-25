@@ -1,15 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpProviderService } from './modules/http-provider-service/http-provider.service';
 import { ValidationMarkerData } from './modules/validation-marker-summary/validation-marker-summary';
-import { ValidationMarkerService, ValidationSummary } from './modules/validation-marker-service/validation-marker.service';
-import { ValidationMarkerServiceConfig } from './modules/validation-marker-service/validation-marker.service.config';
+import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
 
 @Injectable()
 export class ValidationMarkerServiceMock extends ValidationMarkerService {
-
-  constructor(private httpProvider: HttpProviderService, config: ValidationMarkerServiceConfig) {
-    super(config);
-  }
 
   public async getAllMarkerSummaries(): Promise<Map<string, ValidationMarkerData>> {
     const resultMap = new Map<string, ValidationMarkerData>();

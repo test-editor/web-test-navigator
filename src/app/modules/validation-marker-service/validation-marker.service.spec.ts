@@ -1,7 +1,7 @@
 import { TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
 import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
-import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
+import { ValidationMarkerService } from './validation-marker.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { XtextDefaultValidationMarkerService } from './xtext-default-validation-marker.service';
