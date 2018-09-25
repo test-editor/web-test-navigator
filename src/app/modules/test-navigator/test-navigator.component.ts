@@ -17,6 +17,8 @@ import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
 import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
+import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
+import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
 @Component({
   selector: 'app-test-navigator',
@@ -60,6 +62,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
               private indexService: IndexService,
               private filenameValidator: FilenameValidator,
               private persistenceService: PersistenceService,
+              private validationMarkerService: ValidationMarkerService,
               indicators: IndicatorFieldSetup) {
     this.treeConfig.indicatorFields = indicators.fields;
   }
@@ -126,8 +129,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       const root = (await this.filteredTreeService.listTreeNodes())
         .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)));
       root.expanded = true;
+      this.updateValidationMarkers(root);
       return root;
-      // this.updateValidationMarkers(root);
     } catch (error) {
       // TODO: prevent errors! keep connection to backend, as long as the list files service is running (in the backend) show the spinner!
       if (retryCount > 0) {
@@ -139,6 +142,16 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         throw error;
       }
     }
+  }
+
+  private async updateValidationMarkers(root: TestNavigatorTreeNode) {
+    const validationMarkers = await this.validationMarkerService.getAllMarkerSummaries();
+    console.log(JSON.stringify(validationMarkers));
+    root.forEach((node) => {
+      if (validationMarkers.has(node.id)) {
+        node.validation = new ValidationMarkerSummary(validationMarkers.get(node.id));
+      }
+    });
   }
 
   /** called by button bar to completely load the index anew and load the workspace thereafter */

@@ -7,6 +7,7 @@ import { HttpClientTestingModule, HttpTestingController } from '@angular/common/
 import { XtextDefaultValidationMarkerService } from './xtext-default-validation-marker.service';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
+import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
 
 const firstChild: WorkspaceElement = {
   name: 'firstChild',
@@ -65,10 +66,7 @@ const expectedValidationMarkersForSampleResponse = [
   { path: firstChild.path, errors: 3, warnings: 2, infos: 6 },
   { path: greatGrandChild1.path, errors: 3, warnings: 2, infos: 6 },
   { path: greatGrandChild2.path, errors: 3, warnings: 2, infos: 6 },
-  { path: grandChild.path, errors: 6, warnings: 4, infos: 12 },
-  { path: middleChild.path, errors: 6, warnings: 4, infos: 12 },
   { path: lastChild.path, errors: 3, warnings: 2, infos: 6 },
-  { path: root.path, errors: 12, warnings: 8, infos: 24 },
 ];
 
 describe('ValidationMarkerService', () => {
@@ -98,26 +96,27 @@ describe('ValidationMarkerService', () => {
     });
   });
 
-  // this test should be rewritten, too, I guess, since checking is done for all files
-  it('retrieves markers for single file', fakeAsync(inject([HttpTestingController, ValidationMarkerService],
+  it('retrieves all markers', fakeAsync(inject([HttpTestingController, ValidationMarkerService],
     (httpMock: HttpTestingController, validationMarkerService: ValidationMarkerService) => {
       // given
-      const sampleFile: WorkspaceElement = { path: 'sample/path/file.txt', name: 'file.txt', children: [], type: ElementType.File };
       const allMarkerSummariesRequest = {
         url: serviceConfig.validationServiceUrl,
         method: 'GET'
       };
 
       // when
-      validationMarkerService.getAllMarkerSummaries(sampleFile)
+      validationMarkerService.getAllMarkerSummaries()
 
         // then
-        .then((summaries: ValidationSummary[]) => {
-          expect(summaries.length).toEqual(8);
-          expect(summaries[7].path).toEqual(sampleFile.path);
-          expect(summaries[7].errors).toEqual(0);
-          expect(summaries[7].warnings).toEqual(0);
-          expect(summaries[7].infos).toEqual(0);
+        .then((summaries: Map<string, ValidationMarkerData>) => {
+          expect(summaries.size).toEqual(4);
+          expect(summaries.get(firstChild.path)).toEqual(jasmine.objectContaining({errors: 3, warnings: 2, infos: 6 }));
+          expect(summaries.get(greatGrandChild1.path)).toEqual(jasmine.objectContaining({errors: 3, warnings: 2, infos: 6 }));
+          expect(summaries.get(greatGrandChild2.path)).toEqual(jasmine.objectContaining({errors: 3, warnings: 2, infos: 6 }));
+          expect(summaries.get(lastChild.path)).toEqual(jasmine.objectContaining({errors: 3, warnings: 2, infos: 6 }));
+          expect(summaries.has(grandChild.path)).toBeFalsy();
+          expect(summaries.has(middleChild.path)).toBeFalsy();
+          expect(summaries.has(root.path)).toBeFalsy();
         });
       tick();
 

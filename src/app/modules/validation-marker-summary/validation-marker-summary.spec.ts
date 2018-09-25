@@ -34,4 +34,20 @@ describe('ValidationMarkerSummary', () => {
       expect(differenceMarker.infos).toEqual(5);
     });
   });
+
+  describe('negate', () => {
+    it('should return the additive inverse of the object\'s values', () => {
+      // given
+      const existingMarker = new ValidationMarkerSummary({errors: 11, warnings: -2, infos: 0});
+
+      // when
+      const negatedMarker = existingMarker.negate();
+
+      // then
+      expect(negatedMarker.errors).toEqual(-11);
+      expect(negatedMarker.warnings).toEqual(2);
+      expect(negatedMarker.infos === 0).toBeTruthy(); // -0 and 0 are separate entities in JS
+                                                      // Jasmine's toEqual distinguishes them, while -0 === 0 evaluates to true.
+    });
+  });
 });

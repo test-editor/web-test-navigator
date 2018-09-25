@@ -14,13 +14,13 @@ export class TestNavigatorTreeNode implements TreeNode {
   };
 
   private _children: TestNavigatorTreeNode[];
+  private _validation = ValidationMarkerSummary.zero;
   collapsedCssClasses = 'fas fa-chevron-right';
   expandedCssClasses = 'fas fa-chevron-down';
   cssClasses = '';
   expanded = undefined;
   parent: TestNavigatorTreeNode;
   dirty = false;
-  _validation = ValidationMarkerSummary.zero;
 
   constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
     if (workspaceElement.type === ElementType.Folder) {
@@ -34,11 +34,23 @@ export class TestNavigatorTreeNode implements TreeNode {
   }
 
   setVisible(showNotHide: boolean): void {
-    if (showNotHide) {
-      this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
-    } else {
-      this.cssClasses = this.addToCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+    if (this.isVisible() !== showNotHide) {
+      if (showNotHide) {
+        this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+        if (this.parent) {
+          this.parent.updateValidation(this._validation);
+        }
+      } else {
+        this.cssClasses = this.addToCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+        if (this.parent) {
+          this.parent.updateValidation(this._validation.negate());
+        }
+      }
     }
+  }
+
+  isVisible(): boolean {
+    return !this.cssClasses.includes(TestNavigatorTreeNode.hideCssClass);
   }
 
   private removeFromCssClasses(cssClasses: string, classToRemove: string): string {

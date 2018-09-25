@@ -230,4 +230,22 @@ describe('TestNavigatorTreeNode', () => {
     expect(actualValues.warnings).toEqual(6);
     expect(actualValues.infos).toEqual(3);
   });
+
+  it('takes its validation marker values out of the aggregation calculation when becoming invisible', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode (
+      { name: 'root', path: 'path/to/root', type: ElementType.Folder, children: [
+        { name: 'child', path: 'path/to/root/child', type: ElementType.File, children: [] }
+      ]}, null
+    );
+    treeNode.children[0].validation = new ValidationMarkerSummary({ errors: 3, warnings: 2, infos: 1 });
+    treeNode.expanded = false;
+    expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 3, warnings: 2, infos: 1 }));
+
+    // when
+    treeNode.children[0].setVisible(false);
+
+    // then
+    expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 0, warnings: 0, infos: 0 }));
+  });
 });

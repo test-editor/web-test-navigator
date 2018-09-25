@@ -32,4 +32,12 @@ export class ValidationMarkerSummary implements ValidationMarkerData {
       infos: this.infos - summand.infos
     });
   }
+
+  negate(): ValidationMarkerSummary {
+    return new ValidationMarkerSummary({
+      errors: -this.errors,
+      warnings: -this.warnings,
+      infos: -this.infos
+    });
+  }
 }
