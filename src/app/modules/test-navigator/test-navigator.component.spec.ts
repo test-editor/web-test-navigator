@@ -44,6 +44,7 @@ describe('TestNavigatorComponent', () => {
     ]});
     when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
     when(mockPersistenceService.renameResource(anyString(), anyString())).thenResolve('');
+    when(mockPersistenceService.createResource(anyString(), anything())).thenResolve('');
     TestBed.configureTestingModule({
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
@@ -79,8 +80,18 @@ describe('TestNavigatorComponent', () => {
     renameButton.nativeElement.click(); fixture.detectChanges();
     const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
     inputBox.nativeElement.value = newName;
+    inputBox.triggerEventHandler('keyup.enter', {});
     tick(); fixture.detectChanges();
-    inputBox.triggerEventHandler('keyup.enter', {/* key: 'Enter', stopPropagation: () => {}, preventDefault: () => {}*/});
+  }
+
+  function selectFirstElementClickNewFileEnterTextAndHitEnter(newName: string) {
+    const firstNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+    const newFileButton = fixture.debugElement.query(By.css('#new-file'));
+    firstNode.nativeElement.click(); fixture.detectChanges();
+    newFileButton.nativeElement.click(); fixture.detectChanges();
+    const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
+    inputBox.nativeElement.value = newName;
+    inputBox.triggerEventHandler('keyup.enter', {});
     tick(); fixture.detectChanges();
   }
 
@@ -257,5 +268,26 @@ describe('TestNavigatorComponent', () => {
     expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
   }));
 
+  it('updates validation markers after a node is added', fakeAsync(async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+
+    const validationMarkerMap = new Map<string, ValidationMarkerData>();
+    validationMarkerMap.set('src/test/java/newFile.tcl', {errors: 6, warnings: 4, infos: 2});
+    validationMarkerMap.set('src/test/java/test.tcl', {errors: 3, warnings: 4, infos: 5});
+    validationMarkerMap.set('src/test/java/test.tsl', {errors: 0, warnings: 1, infos: 2});
+    when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
+
+    // when
+    selectFirstElementClickNewFileEnterTextAndHitEnter('newFile.tcl');
+
+    // then
+    expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 9, warnings: 9, infos: 9}));
+    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 6, warnings: 4, infos: 2}));
+    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
+    expect(component.model.children[2].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+  }));
 
 });
