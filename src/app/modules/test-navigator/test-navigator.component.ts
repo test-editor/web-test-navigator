@@ -146,7 +146,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   private async updateValidationMarkers(root: TestNavigatorTreeNode) {
     const validationMarkers = await this.validationMarkerService.getAllMarkerSummaries();
-    console.log(JSON.stringify(validationMarkers));
+    this.log('received validation markers from server: ', JSON.stringify(validationMarkers));
     root.forEach((node) => {
       if (validationMarkers.has(node.id)) {
         node.validation = new ValidationMarkerSummary(validationMarkers.get(node.id));

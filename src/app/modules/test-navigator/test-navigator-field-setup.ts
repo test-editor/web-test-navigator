@@ -24,23 +24,17 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
   ];
 
   private validationLabel(node: TestNavigatorTreeNode): string {
-    let label = '';
+    const label: string[] = [];
     if (node.validation.errors > 0) {
-      label += `${node.validation.errors} error(s)`;
+      label.push(`${node.validation.errors} error(s)`);
     }
     if (node.validation.warnings > 0) {
-      if (label.length > 0) {
-        label += ', ';
-      }
-      label += `${node.validation.warnings} warning(s)`;
+      label.push(`${node.validation.warnings} warning(s)`);
     }
     if (node.validation.infos > 0) {
-      if (label.length > 0) {
-        label += ', ';
-      }
-      label += `${node.validation.infos} info(s)`;
+      label.push(`${node.validation.infos} info(s)`);
     }
-    return label;
+    return label.join(', ');
   }
 
 }
