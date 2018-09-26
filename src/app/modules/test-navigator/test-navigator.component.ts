@@ -6,19 +6,21 @@ import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig
 import { Subscription } from 'rxjs/Subscription';
 import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED  } from '../event-types-in';
 import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
-         WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, TEST_SELECTED } from '../event-types-out';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
+         WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED } from '../event-types-out';
 import { FilterState } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
 import { filterFor, testNavigatorFilter } from '../model/filters';
-import { isConflict } from '../persistence-service/conflict';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { isConflict, Conflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
-import { ElementType } from '../persistence-service/workspace-element';
+import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
+import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+
+export type ClipType = 'cut' | 'copy' | null;
 
 @Component({
   selector: 'app-test-navigator',
@@ -31,6 +33,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private fileSavedSubscription: Subscription;
   public refreshClassValue = '';
   private selectedNode: TestNavigatorTreeNode = null;
+  private nodeClipped: TestNavigatorTreeNode = null;
+  private clippedBy: ClipType = null;
   private treeSelectionChangeSubscription: Subscription;
   private treeDeselectionChangeSubscription: Subscription;
   private testExecutionSubscription: Subscription;
@@ -363,5 +367,90 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.errorMessage = null;
     }, 3000);
+  }
+
+  cutElement(): void {
+    this.nodeClipped = this.selectedNode;
+    this.clippedBy = 'cut';
+  }
+
+  copyElement(): void {
+    this.nodeClipped = this.selectedNode;
+    this.clippedBy = 'copy';
+  }
+
+  /** create an id that is unique within the children of the target folder) */
+  private uniqifyTargetId(targetFolder: TestNavigatorTreeNode, source: TestNavigatorTreeNode): string {
+    let createdId = targetFolder.id + '/' + source.id.split('/').pop();
+    let tailNumber = 0;
+    while (targetFolder.findFirst((node) => node.id === createdId) && tailNumber < 9) {
+      const tail = createdId.split('.').pop();
+      let body = createdId.substring(0, createdId.length - tail.length - 1);
+      if (body.substring(body.length - 2).match('_\\d')) {
+        tailNumber++;
+        body = body.substring(0, body.length - 2);
+      }
+      createdId = body + '_' + tailNumber + '.' + tail;
+    }
+    if (targetFolder.findFirst((node) => node.id === createdId)) {
+      throw(new Error('Target name \'' + createdId + '\' already exists.'));
+    }
+    return createdId;
+  }
+
+  async pasteElement(): Promise<void> {
+    if (!this.pasteDisabled) {
+      try {
+        const createdId = this.uniqifyTargetId(this.selectedNode, this.nodeClipped);
+        const createdName = createdId.split('/').pop();
+        if (!this.filenameValidator.isValidFileName(createdName)) {
+          throw(new Error('created filename \'' + createdName + '\' is invalid'));
+        }
+
+        const creationResult = await this.persistenceService.createResource(createdId, ElementType.File);
+        if (creationResult instanceof Conflict) {
+          const messagePayload = { message: creationResult.message };
+          this.log('sending ' + SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
+          this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
+        } else {
+          const messagePayload = { message: creationResult };
+          this.log('sending ' + SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
+          this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
+          const rawElement: WorkspaceElement = {
+            name: createdName,
+            path: createdId,
+            type: ElementType.File,
+            children: []
+          };
+          this.selectedNode.addChild(rawElement);
+          if (this.clippedBy === 'cut') {
+            const removalResult = await this.persistenceService.deleteResource(this.nodeClipped.id);
+            if (removalResult instanceof Conflict) {
+              this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: removalResult.message });
+            } else {
+              this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: removalResult });
+              this.nodeClipped.remove();
+            }
+          }
+        }
+        this.nodeClipped = null;
+        this.clippedBy = null;
+      } catch (error) {
+        this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: 'ERROR pasting. ' + error });
+      }
+    }
+  }
+
+  get pasteDisabled(): boolean {
+    return !(this.nodeClipped && this.nodeClipped.type === ElementType.File
+             && this.selectedNode && this.selectedNode.type === ElementType.Folder);
+  }
+
+  hasCuttedNodeInClipboard(): boolean {
+    return this.nodeClipped !== null && this.clippedBy === 'cut';
+  }
+
+  hasCopiedNodeInClipboard(): boolean {
+    return this.nodeClipped !== null && this.clippedBy === 'copy';
   }
 }

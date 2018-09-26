@@ -4,7 +4,8 @@ import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { anyString, instance, mock, verify, when, anything } from 'ts-mockito/lib/ts-mockito';
+import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
+import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
@@ -18,6 +19,7 @@ import { TestNavigatorComponent } from './test-navigator.component';
 import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 import { XtextIndexService } from '../index-service/xtext-index.service';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -41,7 +43,8 @@ describe('TestNavigatorComponent', () => {
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
-        {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []}
+        {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []},
+        {name: 'subfolder', path: 'src/test/java/subfolder', type: ElementType.Folder, children: []}
     ]});
     when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
     when(mockPersistenceService.renameResource(anyString(), anyString())).thenResolve('');
@@ -316,5 +319,171 @@ describe('TestNavigatorComponent', () => {
     expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
   })));
 
+
+  fit('activates cut and copy button if the selection is a file', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+
+    // when
+    component.select(component.model.children[0]);
+    fixture.detectChanges();
+
+    // then
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+
+    expect(cutButton.disabled).toBeFalsy();
+    expect(copyButton.disabled).toBeFalsy();
+  });
+
+  fit('deactivates cut and copy button if no selection is active', () => {
+    // given
+
+    // when
+    fixture.detectChanges();
+
+    // then
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+
+    expect(cutButton.disabled).toBeTruthy();
+    expect(copyButton.disabled).toBeTruthy();
+  });
+
+  fit('marks node for cutting when selecting the cut button', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+
+    // when
+    component.select(component.model.children[0]);
+    fixture.detectChanges();
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    cutButton.click();
+    fixture.detectChanges();
+
+    // then
+    expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
+  });
+
+  fit('marks node for copying when selecting the copy button', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+
+    // when
+    component.select(component.model.children[0]);
+    fixture.detectChanges();
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+    copyButton.click();
+    fixture.detectChanges();
+
+    // then
+    expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
+  });
+
+  fit('marks node for cutting when selecting the cut button regard less of previous marks', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[0]);
+    fixture.detectChanges();
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+    copyButton.click();
+    fixture.detectChanges();
+    expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
+
+    // when
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    cutButton.click();
+    fixture.detectChanges();
+
+    // then
+    expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
+    expect(component.hasCopiedNodeInClipboard()).toBeFalsy();
+  });
+
+  fit('marks node for copying when selecting the copy button regard less of previous marks', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[0]);
+    fixture.detectChanges();
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    cutButton.click();
+    fixture.detectChanges();
+    expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
+
+    // when
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+    copyButton.click();
+    fixture.detectChanges();
+
+    // then
+    expect(component.hasCuttedNodeInClipboard()).toBeFalsy();
+    expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
+  });
+
+  fit('activates paste only, if a mark is present and the selected node is a folder', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[1]);
+    fixture.detectChanges();
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    cutButton.click();
+    fixture.detectChanges();
+    expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
+
+    // when
+    component.select(component.model); // select (root) folder
+    fixture.detectChanges();
+
+    // then
+    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
+    expect(pasteButton.disabled).toBeFalsy();
+  });
+
+  fit('pastes the last marked node into the selected folder', async () => {
+    // given
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[1]);
+    fixture.detectChanges();
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+    copyButton.click();
+    fixture.detectChanges();
+    expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
+    when(mockPersistenceService.createResource(anyString(), anything())).thenResolve('ok');
+
+    // when
+    component.select(component.model); // select (root) folder
+    fixture.detectChanges();
+    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
+    pasteButton.click();
+    fixture.detectChanges();
+
+    // then
+    expect(component.model.children[0].children[0].name).toEqual('test.tcl');
+    expect(component.model.children[0].children[0].id).toEqual('src/test/java/subfolder/test.tcl');
+    expect(mockPersistenceService.deleteResource).toHaveBeenCalledTimes(0);
+  });
+
+  fit('executes backend create if pasting', () => {
+    fail();
+  });
+
+  fit('executes delete if pasting cutted nodes', () => {
+    fail();
+  });
+
+  fit('keeps the mark if pasting fails', () => {
+    fail();
+  });
+
+  fit('does not execute delete if pasting fails during backend create in case of cutting', () => {
+    fail();
+  });
 
 });
