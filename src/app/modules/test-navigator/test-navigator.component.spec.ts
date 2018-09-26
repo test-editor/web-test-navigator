@@ -2,9 +2,9 @@ import { async, ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angul
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { MessagingModule } from '@testeditor/messaging-service';
-import { TreeViewerModule } from '@testeditor/testeditor-commons';
+import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, verify, anyString } from 'ts-mockito/lib/ts-mockito';
+import { anyString, instance, mock, verify, when } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -14,7 +14,10 @@ import { ElementType } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { FilenameValidator } from './filename-validator';
+import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
+import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
+import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -25,7 +28,12 @@ describe('TestNavigatorComponent', () => {
   beforeEach(async(() => {
     mockPersistenceService = mock(PersistenceService);
     const mockIndexService = mock(IndexService);
-    const mockValidationService = mock(ValidationMarkerService);
+    const mockValidationService = mock(XtextDefaultValidationMarkerService);
+    const validationMarkerMap = new Map<string, ValidationMarkerData>();
+    validationMarkerMap.set('src/test/java/test.tcl', {errors: 1, warnings: 2, infos: 3});
+    validationMarkerMap.set('src/test/java/test.tsl', {errors: 0, warnings: 1, infos: 2});
+    when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
+
     mockFilenameValidator = mock(FilenameValidator);
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
@@ -40,7 +48,8 @@ describe('TestNavigatorComponent', () => {
                    { provide: FilenameValidator, useValue: instance(mockFilenameValidator) },
                    { provide: PersistenceService, useValue: instance(mockPersistenceService) },
                    { provide: IndexService, useValue: instance(mockIndexService) },
-                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) } ]
+                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) },
+                   { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup } ]
     })
       .compileComponents();
   }));
@@ -165,4 +174,34 @@ describe('TestNavigatorComponent', () => {
     flush();
   }));
 
+  it('retrieves and sets validation markers during initialization', fakeAsync( async () => {
+    // given + when
+    await component.updateModel();
+    tick(); fixture.detectChanges();
+
+    // then
+    const tslFile = component.model.children[1];
+    const tclFile = component.model.children[0];
+    expect(tclFile.validation).toEqual(jasmine.objectContaining({errors: 1, warnings: 2, infos: 3}));
+    expect(tslFile.validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+    expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 1, warnings: 3, infos: 5}));
+
+    const errorMarker = fixture.debugElement.query(By.css('.validation-errors'));
+    expect(errorMarker.nativeElement.title).toEqual('1 error(s), 2 warning(s), 3 info(s)');
+    const warningMarker = fixture.debugElement.query(By.css('.validation-warnings'));
+    expect(warningMarker.nativeElement.title).toEqual('1 warning(s), 2 info(s)');
+  }));
+
+  it('lets a validation marker appear on a folder when it is collapsed and its children have markers', fakeAsync( async () => {
+    // given
+    await component.updateModel();
+
+    // when
+    component.model.expanded = false;
+    tick(); fixture.detectChanges();
+
+    // then
+    const errorMarker = fixture.debugElement.query(By.css('.validation-errors'));
+    expect(errorMarker.nativeElement.title).toEqual('1 error(s), 3 warning(s), 5 info(s)');
+  }));
 });

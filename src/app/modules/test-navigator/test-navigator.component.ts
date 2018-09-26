@@ -1,6 +1,6 @@
 import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig, EmbeddedDeleteButton, DeleteAction,
+import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
          TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
        } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
@@ -17,6 +17,8 @@ import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
 import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
+import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
+import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
 @Component({
   selector: 'app-test-navigator',
@@ -52,13 +54,17 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded,
     embeddedButton: (node: TreeNode) => new EmbeddedDeleteButton(
       new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))),
+    indicatorFields: []
   };
 
   constructor(private filteredTreeService: TreeFilterService,
               private messagingService: MessagingService,
               private indexService: IndexService,
               private filenameValidator: FilenameValidator,
-              private persistenceService: PersistenceService) {
+              private persistenceService: PersistenceService,
+              private validationMarkerService: ValidationMarkerService,
+              indicators: IndicatorFieldSetup) {
+    this.treeConfig.indicatorFields = indicators.fields;
   }
 
   ngOnInit() {
@@ -123,8 +129,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       const root = (await this.filteredTreeService.listTreeNodes())
         .forEach((node) => (node as TestNavigatorTreeNode).setVisible(testNavigatorFilter(node)));
       root.expanded = true;
+      this.updateValidationMarkers(root);
       return root;
-      // this.updateValidationMarkers(root);
     } catch (error) {
       // TODO: prevent errors! keep connection to backend, as long as the list files service is running (in the backend) show the spinner!
       if (retryCount > 0) {
@@ -136,6 +142,16 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         throw error;
       }
     }
+  }
+
+  private async updateValidationMarkers(root: TestNavigatorTreeNode) {
+    const validationMarkers = await this.validationMarkerService.getAllMarkerSummaries();
+    this.log('received validation markers from server: ', JSON.stringify(validationMarkers));
+    root.forEach((node) => {
+      if (validationMarkers.has(node.id)) {
+        node.validation = new ValidationMarkerSummary(validationMarkers.get(node.id));
+      }
+    });
   }
 
   /** called by button bar to completely load the index anew and load the workspace thereafter */

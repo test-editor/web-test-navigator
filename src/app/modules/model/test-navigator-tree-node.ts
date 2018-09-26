@@ -1,5 +1,6 @@
 import { TreeNode } from '@testeditor/testeditor-commons';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
+import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
 export class TestNavigatorTreeNode implements TreeNode {
   private static readonly hideCssClass = 'hidden';
@@ -9,9 +10,11 @@ export class TestNavigatorTreeNode implements TreeNode {
     'bmp': 'fas fas fa-image', 'png': 'fas fa-image', 'jpg': 'fas fa-image',
     'jpeg': 'fas fa-image', 'gif': 'fas fa-image', 'svg': 'fas fa-image',
     'tsl': 'fas fa-file tsl-file-color', 'tcl': 'fas fa-file tcl-file-color', 'tml': 'fas fa-file tcl-file-color',
-    'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color'};
+    'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color'
+  };
 
   private _children: TestNavigatorTreeNode[];
+  private _validation = ValidationMarkerSummary.zero;
   collapsedCssClasses = 'fas fa-chevron-right';
   expandedCssClasses = 'fas fa-chevron-down';
   cssClasses = '';
@@ -31,11 +34,23 @@ export class TestNavigatorTreeNode implements TreeNode {
   }
 
   setVisible(showNotHide: boolean): void {
-    if (showNotHide) {
-      this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
-    } else {
-      this.cssClasses = this.addToCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+    if (this.isVisible() !== showNotHide) {
+      if (showNotHide) {
+        this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+        if (this.parent) {
+          this.parent.updateValidation(this._validation);
+        }
+      } else {
+        this.cssClasses = this.addToCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
+        if (this.parent) {
+          this.parent.updateValidation(this._validation.negate());
+        }
+      }
     }
+  }
+
+  isVisible(): boolean {
+    return !this.cssClasses.includes(TestNavigatorTreeNode.hideCssClass);
   }
 
   private removeFromCssClasses(cssClasses: string, classToRemove: string): string {
@@ -66,6 +81,27 @@ export class TestNavigatorTreeNode implements TreeNode {
 
   get id(): string {
     return this.workspaceElement.path;
+  }
+
+  get validation(): ValidationMarkerSummary {
+    return this._validation;
+  }
+
+  set validation(value: ValidationMarkerSummary) {
+    if (this.type === ElementType.File) {
+      const difference = value.subtract(this._validation);
+      this._validation = value;
+      if (this.parent) {
+        this.parent.updateValidation(difference);
+      }
+    }
+  }
+
+  private updateValidation(difference: ValidationMarkerSummary) {
+    this._validation = this._validation.add(difference);
+    if (this.parent) {
+      this.parent.updateValidation(difference);
+    }
   }
 
   get root(): TestNavigatorTreeNode {

@@ -5,3 +5,7 @@
 
 .embedded-delete-button { color: #a80f22 }
 .embedded-delete-button:hover { color: #d82300; }
+
+.validation-errors { color: #d82300 }
+.validation-warnings { color: #ffcc00 }
+.validation-infos { color: #3498DB }

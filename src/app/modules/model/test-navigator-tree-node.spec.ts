@@ -1,5 +1,7 @@
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { TestNavigatorTreeNode } from './test-navigator-tree-node';
+import { forEach } from '@testeditor/testeditor-commons';
+import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
 describe('TestNavigatorTreeNode', () => {
   it('should create an instance', () => {
@@ -174,5 +176,76 @@ describe('TestNavigatorTreeNode', () => {
 
     // then
     expect(treeNode.leafCssClasses).toEqual('fas fa-file tsl-file-color');
+  });
+
+  it('allows to set validation marker data for files', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode({ name: 'test.tcl', path: 'path/to/test.tcl', type: ElementType.File, children: undefined});
+
+    // when
+    treeNode.validation = new ValidationMarkerSummary({ errors: 42, warnings: 23, infos: 3 });
+
+    // then
+    expect(treeNode.validation.errors).toEqual(42);
+    expect(treeNode.validation.warnings).toEqual(23);
+    expect(treeNode.validation.infos).toEqual(3);
+  });
+
+  it('ignores setting validation marker data for folders', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode({ name: 'folder', path: 'path/to/folder', type: ElementType.Folder, children: undefined});
+
+    // when
+    treeNode.validation = new ValidationMarkerSummary({ errors: 42, warnings: 23, infos: 3 });
+
+    // then
+    const actualValues = treeNode.validation;
+    expect(actualValues.errors).toEqual(0);
+    expect(actualValues.warnings).toEqual(0);
+    expect(actualValues.infos).toEqual(0);
+  });
+
+  it('sums up validation marker data of child nodes, recursively', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode (
+      { name: 'root', path: 'path/to/root', type: ElementType.Folder, children: [
+        { name: 'child', path: 'path/to/root/child', type: ElementType.File, children: [] },
+        { name: 'subDir', path: 'path/to/root/subDir', type: ElementType.Folder, children: [
+          { name: 'grandChild', path: 'path/to/root/subDir/grandChild', type: ElementType.File, children: [] },
+        ]},
+        { name: 'anotherChild', path: 'path/to/root/anotherChild', type: ElementType.File, children: [] },
+      ]}, null
+    );
+    forEach(treeNode, (node: TestNavigatorTreeNode) => {
+      if (node.type === ElementType.File) {
+        node.validation = new ValidationMarkerSummary({ errors: 3, warnings: 2, infos: 1 });
+      }
+    });
+
+    // when
+    const actualValues = treeNode.validation;
+
+    // then
+    expect(actualValues.errors).toEqual(9);
+    expect(actualValues.warnings).toEqual(6);
+    expect(actualValues.infos).toEqual(3);
+  });
+
+  it('takes its validation marker values out of the aggregation calculation when becoming invisible', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode (
+      { name: 'root', path: 'path/to/root', type: ElementType.Folder, children: [
+        { name: 'child', path: 'path/to/root/child', type: ElementType.File, children: [] }
+      ]}, null
+    );
+    treeNode.children[0].validation = new ValidationMarkerSummary({ errors: 3, warnings: 2, infos: 1 });
+    treeNode.expanded = false;
+    expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 3, warnings: 2, infos: 1 }));
+
+    // when
+    treeNode.children[0].setVisible(false);
+
+    // then
+    expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 0, warnings: 0, infos: 0 }));
   });
 });
