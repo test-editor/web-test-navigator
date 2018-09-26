@@ -196,6 +196,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         node.dirty = payload.dirty;
       }
     }));
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
+      this.updateValidationMarkers(this.model);
+    }));
 
     this.messagingService.publish(NAVIGATION_OPEN, node);
     this.log('published NAVIGATION_OPEN', node);

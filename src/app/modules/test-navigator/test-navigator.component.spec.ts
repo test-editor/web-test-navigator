@@ -1,11 +1,10 @@
-import { async, ComponentFixture, fakeAsync, flush, TestBed, tick } from '@angular/core/testing';
+import { async, ComponentFixture, fakeAsync, flush, TestBed, tick, inject } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
-import { MessagingModule } from '@testeditor/messaging-service';
+import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { anyString, instance, mock, verify, when, anything } from 'ts-mockito/lib/ts-mockito';
-import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
@@ -18,6 +17,7 @@ import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
 import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
+import { XtextIndexService } from '../index-service/xtext-index.service';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -28,7 +28,7 @@ describe('TestNavigatorComponent', () => {
 
   beforeEach(async(() => {
     mockPersistenceService = mock(PersistenceService);
-    const mockIndexService = mock(IndexService);
+    const mockIndexService = mock(XtextIndexService);
     mockValidationService = mock(XtextDefaultValidationMarkerService);
     const validationMarkerMap = new Map<string, ValidationMarkerData>();
     validationMarkerMap.set('src/test/java/test.tcl', {errors: 1, warnings: 2, infos: 3});
@@ -289,5 +289,31 @@ describe('TestNavigatorComponent', () => {
     expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
     expect(component.model.children[2].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
   }));
+
+  it('updates validation markers when an open file is saved', fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+    const firstNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+
+    const validationMarkerMap = new Map<string, ValidationMarkerData>();
+    validationMarkerMap.set('src/test/java/test.tcl', {errors: 3, warnings: 4, infos: 5});
+    validationMarkerMap.set('src/test/java/test.tsl', {errors: 0, warnings: 1, infos: 2});
+    when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
+
+    firstNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+    tick(); fixture.detectChanges();
+
+    // when
+    messageBus.publish('editor.save.completed', {});
+    tick();
+
+    // then
+    expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 5, infos: 7}));
+    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
+    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+  })));
+
 
 });
