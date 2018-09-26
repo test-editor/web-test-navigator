@@ -4,7 +4,7 @@ import { By } from '@angular/platform-browser';
 import { MessagingModule } from '@testeditor/messaging-service';
 import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { anyString, instance, mock, verify, when } from 'ts-mockito/lib/ts-mockito';
+import { anyString, instance, mock, verify, when, anything } from 'ts-mockito/lib/ts-mockito';
 import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -24,23 +24,26 @@ describe('TestNavigatorComponent', () => {
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let mockFilenameValidator: FilenameValidator;
   let mockPersistenceService: PersistenceService;
+  let mockValidationService: ValidationMarkerService;
 
   beforeEach(async(() => {
     mockPersistenceService = mock(PersistenceService);
     const mockIndexService = mock(IndexService);
-    const mockValidationService = mock(XtextDefaultValidationMarkerService);
+    mockValidationService = mock(XtextDefaultValidationMarkerService);
     const validationMarkerMap = new Map<string, ValidationMarkerData>();
     validationMarkerMap.set('src/test/java/test.tcl', {errors: 1, warnings: 2, infos: 3});
     validationMarkerMap.set('src/test/java/test.tsl', {errors: 0, warnings: 1, infos: 2});
     when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
 
     mockFilenameValidator = mock(FilenameValidator);
+    when(mockFilenameValidator.isValidName(anyString(), anything())).thenReturn(true);
     when(mockPersistenceService.listFiles()).thenResolve({
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
         {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []}
     ]});
     when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
+    when(mockPersistenceService.renameResource(anyString(), anyString())).thenResolve('');
     TestBed.configureTestingModule({
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
@@ -59,6 +62,27 @@ describe('TestNavigatorComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
+
+  function clickDeleteAndConfirmOnFirstNode() {
+    const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
+    deleteButton.nativeElement.click();
+    fixture.detectChanges();
+    const confirmButton = fixture.debugElement.query(By.css('.confirm-action-confirm-button'));
+    confirmButton.nativeElement.click();
+    tick(); fixture.detectChanges();
+  }
+
+  function selectFirstElementClickRenameEnterTextAndHitEnter(newName: string) {
+    const firstNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+    const renameButton = fixture.debugElement.query(By.css('#rename'));
+    firstNode.nativeElement.click(); fixture.detectChanges();
+    renameButton.nativeElement.click(); fixture.detectChanges();
+    const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
+    inputBox.nativeElement.value = newName;
+    tick(); fixture.detectChanges();
+    inputBox.triggerEventHandler('keyup.enter', {/* key: 'Enter', stopPropagation: () => {}, preventDefault: () => {}*/});
+    tick(); fixture.detectChanges();
+  }
 
   it('should create', () => {
     expect(component).toBeTruthy();
@@ -136,14 +160,9 @@ describe('TestNavigatorComponent', () => {
     const elementBeingDeleted = component.model.children[0];
     component.model.expanded = true;
     fixture.detectChanges();
-    const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
-    deleteButton.nativeElement.click();
-    fixture.detectChanges();
-    const confirmButton = fixture.debugElement.query(By.css('.confirm-action-confirm-button'));
 
     // when
-    confirmButton.nativeElement.click();
-    tick(); fixture.detectChanges();
+    clickDeleteAndConfirmOnFirstNode();
 
     // then
     expect(component.model.children.length).toEqual(1);
@@ -158,14 +177,9 @@ describe('TestNavigatorComponent', () => {
     const elementFailingToBeDeleted = component.model.children[0];
     component.model.expanded = true;
     fixture.detectChanges();
-    const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
-    deleteButton.nativeElement.click();
-    fixture.detectChanges();
-    const confirmButton = fixture.debugElement.query(By.css('.confirm-action-confirm-button'));
 
     // when
-    confirmButton.nativeElement.click();
-    tick(); fixture.detectChanges();
+    clickDeleteAndConfirmOnFirstNode();
 
     // then
     expect(component.model.children.length).toEqual(2);
@@ -204,4 +218,44 @@ describe('TestNavigatorComponent', () => {
     const errorMarker = fixture.debugElement.query(By.css('.validation-errors'));
     expect(errorMarker.nativeElement.title).toEqual('1 error(s), 3 warning(s), 5 info(s)');
   }));
+
+  it('updates validation markers after a deletion', fakeAsync(async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+
+    const validationMarkerMap = new Map<string, ValidationMarkerData>();
+    validationMarkerMap.set('src/test/java/test.tsl', {errors: 23, warnings: 42, infos: 3});
+    when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
+
+    // when
+    clickDeleteAndConfirmOnFirstNode();
+
+    // then
+    expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 23, warnings: 42, infos: 3}));
+    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 23, warnings: 42, infos: 3}));
+  }));
+
+  it('updates validation markers after a rename', fakeAsync(async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+
+    const validationMarkerMap = new Map<string, ValidationMarkerData>();
+    validationMarkerMap.set('src/test/java/renamed.tcl', {errors: 3, warnings: 4, infos: 5});
+    validationMarkerMap.set('src/test/java/test.tsl', {errors: 0, warnings: 1, infos: 2});
+    when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
+
+    // when
+    selectFirstElementClickRenameEnterTextAndHitEnter('renamed.tcl');
+
+    // then
+    expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 5, infos: 7}));
+    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
+    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+  }));
+
+
 });

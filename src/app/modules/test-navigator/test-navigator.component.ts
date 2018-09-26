@@ -240,6 +240,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
           const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
           if (requestSuccessful) {
             selectedNode.rename(newPath, newName);
+            this.updateValidationMarkers(this.model);
           }
           return requestSuccessful;
         }
@@ -360,6 +361,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         this.handleDeleteFailed(result.message);
       } else {
         nodeToDelete.remove();
+        this.updateValidationMarkers(this.model);
         this.messagingService.publish(NAVIGATION_DELETED, nodeToDelete);
       }
     } catch (error) {
