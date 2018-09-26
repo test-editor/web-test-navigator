@@ -142,6 +142,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   remove() {
     if (this.parent) {
       this.parent.removeChild(this);
+      this.parent.updateValidation(this._validation.negate());
     }
   }
 
