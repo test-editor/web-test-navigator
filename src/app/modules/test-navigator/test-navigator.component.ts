@@ -196,6 +196,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         node.dirty = payload.dirty;
       }
     }));
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
+      this.updateValidationMarkers(this.model);
+    }));
 
     this.messagingService.publish(NAVIGATION_OPEN, node);
     this.log('published NAVIGATION_OPEN', node);
@@ -214,11 +217,12 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
           const newPath = contextNode.getDirectory() + newName;
           const requestSuccessful = await this.sendCreateRequest(newPath, type);
           if (requestSuccessful) {
-            /* const newNode = */ parentNode.addChild({ children: [], name: newName, path: newPath, type: type });
+            const newNode =  parentNode.addChild({ children: [], name: newName, path: newPath, type: type });
             parentNode.expanded = true;
             // TODO programmatically select newNode
             if (type === ElementType.File) {
-              this.messagingService.publish(NAVIGATION_OPEN, { name: newName, id: newPath });
+              this.open(newNode);
+              this.updateValidationMarkers(this.model);
             }
           }
           return requestSuccessful;
@@ -240,6 +244,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
           const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
           if (requestSuccessful) {
             selectedNode.rename(newPath, newName);
+            this.updateValidationMarkers(this.model);
           }
           return requestSuccessful;
         }
@@ -360,6 +365,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         this.handleDeleteFailed(result.message);
       } else {
         nodeToDelete.remove();
+        this.updateValidationMarkers(this.model);
         this.messagingService.publish(NAVIGATION_DELETED, nodeToDelete);
       }
     } catch (error) {

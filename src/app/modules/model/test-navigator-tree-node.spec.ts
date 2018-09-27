@@ -248,4 +248,23 @@ describe('TestNavigatorTreeNode', () => {
     // then
     expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 0, warnings: 0, infos: 0 }));
   });
+
+  it('updates parent validation markers when a node is removed', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode (
+      { name: 'root', path: 'path/to/root', type: ElementType.Folder, children: [
+        { name: 'child1', path: 'path/to/root/child1', type: ElementType.File, children: [] },
+        { name: 'child2', path: 'path/to/root/child2', type: ElementType.File, children: [] }
+      ]}, null
+    );
+    treeNode.children[0].validation = new ValidationMarkerSummary({ errors: 3, warnings: 2, infos: 1 });
+    treeNode.children[1].validation = new ValidationMarkerSummary({ errors: 1, warnings: 2, infos: 3 });
+    expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 4, warnings: 4, infos: 4 }));
+
+    // when
+    treeNode.children[0].remove();
+
+    // then
+    expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 1, warnings: 2, infos: 3 }));
+  });
 });
