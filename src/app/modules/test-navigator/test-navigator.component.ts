@@ -309,7 +309,10 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   select(node: TestNavigatorTreeNode) {
-    if (this.model.sameTree(node)) {
+    if (node === null && this.selectedNode) {
+      this.messagingService.publish(TREE_NODE_DESELECTED, this.selectedNode);
+      this.selectedNode = null;
+    } else if (this.model.sameTree(node)) {
       this.selectedNode = node;
       if (node.isTclFile()) {
         this.messagingService.publish(TEST_SELECTED, node);
@@ -380,7 +383,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   /** create an id that is unique within the children of the target folder) */
-  private uniqifyTargetId(targetFolder: TestNavigatorTreeNode, source: TestNavigatorTreeNode): string {
+  uniqifyTargetId(targetFolder: TestNavigatorTreeNode, source: TestNavigatorTreeNode): string {
     let createdId = targetFolder.id + '/' + source.id.split('/').pop();
     let tailNumber = 0;
     while (targetFolder.findFirst((node) => node.id === createdId) && tailNumber < 9) {
@@ -395,46 +398,48 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     if (targetFolder.findFirst((node) => node.id === createdId)) {
       throw(new Error('Target name \'' + createdId + '\' already exists.'));
     }
+    if (!this.filenameValidator.isValidFileName(createdId.split('/').pop())) {
+      throw(new Error('Target name \'' + createdId + '\' is an invalid filename.'));
+    }
+
     return createdId;
   }
 
+  /** currently working only of the clipped element is a file! */
   async pasteElement(): Promise<void> {
     if (!this.pasteDisabled) {
       try {
-        const createdId = this.uniqifyTargetId(this.selectedNode, this.nodeClipped);
-        const createdName = createdId.split('/').pop();
-        if (!this.filenameValidator.isValidFileName(createdName)) {
-          throw(new Error('created filename \'' + createdName + '\' is invalid'));
+        const targetFolder = (this.selectedNode.type === ElementType.File) ? this.selectedNode.parent : this.selectedNode;
+        const newPath = this.uniqifyTargetId(targetFolder, this.nodeClipped);
+        let backendResult;
+        switch (this.clippedBy) {
+          case 'copy':
+            this.log('calling backend to copy resource ' + this.nodeClipped.id + ' to ' + newPath);
+            backendResult = await this.persistenceService.copyResource(newPath, this.nodeClipped.id);
+            break;
+          case 'cut':
+            this.log('calling backend to move resource ' + this.nodeClipped.id + ' to ' + newPath);
+            backendResult = await this.persistenceService.renameResource(newPath, this.nodeClipped.id);
+            break;
         }
-
-        const creationResult = await this.persistenceService.createResource(createdId, ElementType.File);
-        if (creationResult instanceof Conflict) {
-          const messagePayload = { message: creationResult.message };
-          this.log('sending ' + SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
-          this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
+        if (backendResult instanceof Conflict) {
+           this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: 'error during paste: ' + backendResult.message });
         } else {
-          const messagePayload = { message: creationResult };
-          this.log('sending ' + SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
-          this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, messagePayload);
+          this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: 'pasted into' + backendResult });
           const rawElement: WorkspaceElement = {
-            name: createdName,
-            path: createdId,
+            name: backendResult.split('/').pop(),
+            path: backendResult,
             type: ElementType.File,
             children: []
           };
-          this.selectedNode.addChild(rawElement);
+          this.log('adding child to target folder', rawElement);
+          targetFolder.addChild(rawElement);
           if (this.clippedBy === 'cut') {
-            const removalResult = await this.persistenceService.deleteResource(this.nodeClipped.id);
-            if (removalResult instanceof Conflict) {
-              this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: removalResult.message });
-            } else {
-              this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: removalResult });
-              this.nodeClipped.remove();
-            }
+            this.nodeClipped.remove();
           }
+          this.nodeClipped = null;
+          this.clippedBy = null;
         }
-        this.nodeClipped = null;
-        this.clippedBy = null;
       } catch (error) {
         this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION, { message: 'ERROR pasting. ' + error });
       }
@@ -443,7 +448,17 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   get pasteDisabled(): boolean {
     return !(this.nodeClipped && this.nodeClipped.type === ElementType.File
-             && this.selectedNode && this.selectedNode.type === ElementType.Folder);
+             && this.selectedNode
+             && (this.clippedBy === 'copy'
+                 || (this.clippedBy === 'cut' && this.nodeClipped.parent !== this.targetFolderForPaste())));
+  }
+
+  targetFolderForPaste(): TestNavigatorTreeNode {
+    if (this.selectedNode) {
+      return this.selectedNode.type === ElementType.Folder ? this.selectedNode : this.selectedNode.parent;
+    } else {
+      return null;
+    }
   }
 
   hasCuttedNodeInClipboard(): boolean {

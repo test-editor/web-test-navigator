@@ -107,8 +107,8 @@ describe('TestNavigatorComponent', () => {
     // given
     const tslFilterButton = fixture.debugElement.query(By.css('#filter-bar > label')).nativeElement;
     await component.updateModel();
-    const tslFile = component.model.children[1]; expect(tslFile.name).toEqual('test.tsl');
-    const tclFile = component.model.children[0]; expect(tclFile.name).toEqual('test.tcl');
+    const tslFile = component.model.children[2]; expect(tslFile.name).toEqual('test.tsl');
+    const tclFile = component.model.children[1]; expect(tclFile.name).toEqual('test.tcl');
 
     // when
     tslFilterButton.click();
@@ -155,10 +155,10 @@ describe('TestNavigatorComponent', () => {
     // given
     await component.updateModel();
     component.model.expanded = true;
-    component.model.children[0].dirty = true;
+    component.model.children[1].dirty = true;
     fixture.detectChanges();
     const renameButton = fixture.debugElement.query(By.css('#rename'));
-    const testNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+    const testNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
 
     // when
     testNode.nativeElement.click(); fixture.detectChanges();
@@ -172,24 +172,7 @@ describe('TestNavigatorComponent', () => {
     fakeAsync(async () => {
     // given
     await component.updateModel();
-    const elementBeingDeleted = component.model.children[0];
-    component.model.expanded = true;
-    fixture.detectChanges();
-
-    // when
-    clickDeleteAndConfirmOnFirstNode();
-
-    // then
-    expect(component.model.children.length).toEqual(1);
-    expect(component.model.children[0].name).not.toEqual(elementBeingDeleted.name);
-  }));
-
-  it('retains element whose delete button was clicked from the tree, if user confirmed but backend responded with failure',
-    fakeAsync(async () => {
-    // given
-    when(mockPersistenceService.deleteResource(anyString())).thenReject(new Error('deletion unsuccessul'));
-    await component.updateModel();
-    const elementFailingToBeDeleted = component.model.children[0];
+    const elementBeingDeleted = component.model.children[1];
     component.model.expanded = true;
     fixture.detectChanges();
 
@@ -198,7 +181,24 @@ describe('TestNavigatorComponent', () => {
 
     // then
     expect(component.model.children.length).toEqual(2);
-    expect(component.model.children[0].name).toEqual(elementFailingToBeDeleted.name);
+    expect(component.model.children[1].name).not.toEqual(elementBeingDeleted.name);
+  }));
+
+  it('retains element whose delete button was clicked from the tree, if user confirmed but backend responded with failure',
+    fakeAsync(async () => {
+    // given
+    when(mockPersistenceService.deleteResource(anyString())).thenReject(new Error('deletion unsuccessul'));
+    await component.updateModel();
+    const elementFailingToBeDeleted = component.model.children[1];
+    component.model.expanded = true;
+    fixture.detectChanges();
+
+    // when
+    clickDeleteAndConfirmOnFirstNode();
+
+    // then
+    expect(component.model.children.length).toEqual(3);
+    expect(component.model.children[1].name).toEqual(elementFailingToBeDeleted.name);
     expect(fixture.debugElement.query(By.css('#errorMessage')).nativeElement.innerText).toEqual('Error while deleting element!');
     flush();
   }));
@@ -320,7 +320,7 @@ describe('TestNavigatorComponent', () => {
   })));
 
 
-  fit('activates cut and copy button if the selection is a file', async () => {
+  it('activates cut and copy button if the selection is a file', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -337,7 +337,7 @@ describe('TestNavigatorComponent', () => {
     expect(copyButton.disabled).toBeFalsy();
   });
 
-  fit('deactivates cut and copy button if no selection is active', () => {
+  it('deactivates cut and copy button if no selection is active', () => {
     // given
 
     // when
@@ -351,7 +351,7 @@ describe('TestNavigatorComponent', () => {
     expect(copyButton.disabled).toBeTruthy();
   });
 
-  fit('marks node for cutting when selecting the cut button', async () => {
+  it('marks node for cutting when selecting the cut button', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -367,7 +367,7 @@ describe('TestNavigatorComponent', () => {
     expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
   });
 
-  fit('marks node for copying when selecting the copy button', async () => {
+  it('marks node for copying when selecting the copy button', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -383,7 +383,7 @@ describe('TestNavigatorComponent', () => {
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
   });
 
-  fit('marks node for cutting when selecting the cut button regard less of previous marks', async () => {
+  it('marks node for cutting when selecting the cut button regard less of previous marks', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -404,7 +404,7 @@ describe('TestNavigatorComponent', () => {
     expect(component.hasCopiedNodeInClipboard()).toBeFalsy();
   });
 
-  fit('marks node for copying when selecting the copy button regard less of previous marks', async () => {
+  it('marks node for copying when selecting the copy button regard less of previous marks', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -425,7 +425,7 @@ describe('TestNavigatorComponent', () => {
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
   });
 
-  fit('activates paste only, if a mark is present and the selected node is a folder', async () => {
+  it('paste deactivated if no (target) selection is present', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -437,15 +437,15 @@ describe('TestNavigatorComponent', () => {
     expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
 
     // when
-    component.select(component.model); // select (root) folder
+    component.select(null); // no selection
     fixture.detectChanges();
 
     // then
     const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
-    expect(pasteButton.disabled).toBeFalsy();
+    expect(pasteButton.disabled).toBeTruthy();
   });
 
-  fit('pastes the last marked node into the selected folder', async () => {
+  it('pastes the last marked node into the selected folder and creates it on the backend', fakeAsync(async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
@@ -455,35 +455,327 @@ describe('TestNavigatorComponent', () => {
     copyButton.click();
     fixture.detectChanges();
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
-    when(mockPersistenceService.createResource(anyString(), anything())).thenResolve('ok');
+    when(mockPersistenceService.copyResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl' ))
+      .thenResolve('src/test/java/subfolder/test.tcl');
+    when(mockFilenameValidator.isValidFileName('test.tcl')).thenReturn(true);
 
     // when
-    component.select(component.model); // select (root) folder
+    component.select(component.model.children[0]); // select subfolder
     fixture.detectChanges();
     const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
+    expect(pasteButton.disabled).toBeFalsy();
     pasteButton.click();
     fixture.detectChanges();
+    tick();
 
     // then
     expect(component.model.children[0].children[0].name).toEqual('test.tcl');
     expect(component.model.children[0].children[0].id).toEqual('src/test/java/subfolder/test.tcl');
-    expect(mockPersistenceService.deleteResource).toHaveBeenCalledTimes(0);
+    expect(component.hasCuttedNodeInClipboard()).toBeFalsy();
+    expect(component.hasCopiedNodeInClipboard()).toBeFalsy();
+  }));
+
+  it('moves node to new subfolder and executes delete if pasting cutted nodes', fakeAsync(async () => {
+   // given
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[1]);
+    fixture.detectChanges();
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    cutButton.click();
+    fixture.detectChanges();
+    expect(component.hasCuttedNodeInClipboard()).toBeTruthy('hasCuttedNodeInClipboard');
+    when(mockPersistenceService.renameResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl'))
+      .thenResolve('src/test/java/subfolder/test.tcl');
+    when(mockFilenameValidator.isValidFileName('test.tcl')).thenReturn(true);
+
+    // when
+    component.select(component.model.children[0]); // select subfolder
+    fixture.detectChanges();
+    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
+    expect(pasteButton.disabled).toBeFalsy();
+    pasteButton.click();
+    fixture.detectChanges();
+    tick();
+
+    // then
+    expect(component.model.children[0].children[0].name).toEqual('test.tcl');
+    expect(component.model.children[0].children[0].id).toEqual('src/test/java/subfolder/test.tcl');
+    expect(component.model.children[1].name).toEqual('test.tsl');
+    expect(component.model.children.length).toEqual(2);
+    expect(component.hasCuttedNodeInClipboard()).toBeFalsy();
+    expect(component.hasCopiedNodeInClipboard()).toBeFalsy();
+  }));
+
+  it('keeps the mark if pasting fails', fakeAsync(async () => {
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[1]);
+    fixture.detectChanges();
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+    copyButton.click();
+    fixture.detectChanges();
+    expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
+    when(mockPersistenceService.copyResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl' ))
+      .thenThrow(new Error('could not find file src/test/java/test.tcl'));
+    when(mockFilenameValidator.isValidFileName('test.tcl')).thenReturn(true);
+
+    // when
+    component.select(component.model.children[0]); // select subfolder
+    fixture.detectChanges();
+    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
+    expect(pasteButton.disabled).toBeFalsy();
+    pasteButton.click();
+    fixture.detectChanges();
+    tick();
+
+    // then
+    expect(component.model.children[0].children.length).toEqual(0);
+    expect(component.model.children.length).toEqual(3);
+    expect(component.hasCuttedNodeInClipboard()).toBeFalsy();
+    expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
+  }));
+
+  it('does not change the tree if  pasting fails during backend create in case of cutting', fakeAsync(async () => {
+    await component.updateModel();
+    fixture.detectChanges();
+    component.select(component.model.children[1]);
+    fixture.detectChanges();
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    cutButton.click();
+    fixture.detectChanges();
+    expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
+    when(mockPersistenceService.renameResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl' ))
+      .thenThrow(new Error('could not find file src/test/java/test.tcl'));
+    when(mockFilenameValidator.isValidFileName('test.tcl')).thenReturn(true);
+
+    // when
+    component.select(component.model.children[0]); // select subfolder
+    fixture.detectChanges();
+    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
+    expect(pasteButton.disabled).toBeFalsy();
+    pasteButton.click();
+    fixture.detectChanges();
+    tick();
+
+    // then
+    expect(component.model.children[0].children.length).toEqual(0);
+    expect(component.model.children[1].name).toEqual('test.tcl');
+  }));
+
+  it('produces requested filename if it does not exist in target', () => {
+    // given
+    when(mockFilenameValidator.isValidFileName(anyString())).thenReturn(true);
+    const emptyTargetFolder = new TestNavigatorTreeNode({
+      name: 'some',
+      path: 'path/to/some',
+      type: ElementType.Folder,
+      children: []
+    });
+
+    const file = new TestNavigatorTreeNode({
+      name: 'test.tcl',
+      path: 'path/to/test.tcl',
+      type: ElementType.File,
+      children: []
+    });
+
+    // when
+    const uniqueFileId = component.uniqifyTargetId(emptyTargetFolder, file);
+
+    // then
+    expect(uniqueFileId).toEqual('path/to/some/test.tcl');
   });
 
-  fit('executes backend create if pasting', () => {
-    fail();
+  it('produces unique files that are valid, even if target exists', () => {
+    // given
+    when(mockFilenameValidator.isValidFileName(anyString())).thenReturn(true);
+    const nonEmptyTargetFolder = new TestNavigatorTreeNode({
+      name: 'some',
+      path: 'path/to/some',
+      type: ElementType.Folder,
+      children: [{
+        name: 'test.tcl',
+        path: 'path/to/some/test.tcl',
+        type: ElementType.File,
+        children: []
+      }]
+    });
+
+    const file = new TestNavigatorTreeNode({
+      name: 'test.tcl',
+      path: 'path/to/test.tcl',
+      type: ElementType.File,
+      children: []
+    });
+
+    // when
+    const uniqueFileIdInNonEmpty = component.uniqifyTargetId(nonEmptyTargetFolder, file);
+
+    // then
+    expect(uniqueFileIdInNonEmpty).toEqual('path/to/some/test_0.tcl');
   });
 
-  fit('executes delete if pasting cutted nodes', () => {
-    fail();
+  it('fails if no unique file can be created on the target', () => {
+    // given
+    when(mockFilenameValidator.isValidFileName(anyString())).thenReturn(true);
+    const fullTargetFolder = new TestNavigatorTreeNode({
+      name: 'some',
+      path: 'path/to/some',
+      type: ElementType.Folder,
+      children: [{
+        name: 'test.tcl',
+        path: 'path/to/some/test.tcl',
+        type: ElementType.File,
+        children: []
+      }]
+    });
+    for (let i = 0; i < 10; i++) {
+      fullTargetFolder.addChild({
+        name: 'test_' + i + '.tcl',
+        path: 'path/to/some/test_' + i + '.tcl',
+        type: ElementType.File,
+        children: []
+      });
+    }
+
+    const file = new TestNavigatorTreeNode({
+      name: 'test.tcl',
+      path: 'path/to/test.tcl',
+      type: ElementType.File,
+      children: []
+    });
+
+    // when
+    try {
+      component.uniqifyTargetId(fullTargetFolder, file);
+      fail('should raise an exception');
+    } catch (error) {
+      // then
+      expect().nothing();
+    }
+
   });
 
-  fit('keeps the mark if pasting fails', () => {
-    fail();
+  it('fails if the unique file cannot be created, because it is no valid file name', () => {
+     // given
+    when(mockFilenameValidator.isValidFileName('test{}.tcl')).thenReturn(false);
+    const emptyTargetFolder = new TestNavigatorTreeNode({
+      name: 'some',
+      path: 'path/to/some',
+      type: ElementType.Folder,
+      children: []
+    });
+
+    const file = new TestNavigatorTreeNode({
+      name: 'test{}.tcl',
+      path: 'path/to/test{}.tcl',
+      type: ElementType.File,
+      children: []
+    });
+
+    // when
+    try {
+      component.uniqifyTargetId(emptyTargetFolder, file);
+      fail('invalid filename should throw an exception');
+    } catch (error) {
+      // then
+      expect().nothing();
+    }
   });
 
-  fit('does not execute delete if pasting fails during backend create in case of cutting', () => {
-    fail();
+  it('enables paste if cutted is a file and target is a folder other than the clipped\' parent', () => {
+    // given
+    const model = new TestNavigatorTreeNode({
+      name: 'workspace',
+      path: 'src/test/java',
+      type: ElementType.Folder,
+      children: [{ name: 'sub', path: 'src/test/java/sub', type: ElementType.Folder, children: [] },
+                 { name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: [] },
+                 { name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: [] }]
+    });
+
+    component.model = model;
+    component.select(model.children[1]);
+    component.cutElement();
+    component.select(model.children[0]);
+
+    // when
+    const pasteDisabled = component.pasteDisabled;
+
+    // then
+    expect(pasteDisabled).toBeFalsy();
+  });
+
+  it('enables paste if cutted is a file  and target is a file of a separate folder', () => {
+    // given
+    const model = new TestNavigatorTreeNode({
+      name: 'workspace',
+      path: 'src/test/java',
+      type: ElementType.Folder,
+      children: [{ name: 'sub', path: 'src/test/java/sub', type: ElementType.Folder, children: [
+        { name: 'other.tcl', path: 'src/test/java/sub/other.tcl', type: ElementType.Folder, children: [] }
+      ] },
+                 { name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: [] },
+                 { name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: [] }]
+    });
+
+    component.model = model;
+    component.select(model.children[1]);
+    component.cutElement();
+    component.select(model.children[0].children[0]);
+
+    // when
+    const pasteDisabled = component.pasteDisabled;
+
+    // then
+    expect(pasteDisabled).toBeFalsy();
+  });
+
+  it('disables paste if cutted is a file and target is a folder equal to the clipped\' parent', () => {
+    // given
+    const model = new TestNavigatorTreeNode({
+      name: 'workspace',
+      path: 'src/test/java',
+      type: ElementType.Folder,
+      children: [{ name: 'sub', path: 'src/test/java/sub', type: ElementType.Folder, children: [] },
+                 { name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: [] },
+                 { name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: [] }]
+    });
+
+    component.model = model;
+    component.select(model.children[1]);
+    component.cutElement();
+    component.select(model);
+
+    // when
+    const pasteDisabled = component.pasteDisabled;
+
+    // then
+    expect(pasteDisabled).toBeTruthy();
+  });
+
+  it('disables paste if cutted is a file and target is a file within the same folder', () => {
+    // given
+    const model = new TestNavigatorTreeNode({
+      name: 'workspace',
+      path: 'src/test/java',
+      type: ElementType.Folder,
+      children: [{ name: 'sub', path: 'src/test/java/sub', type: ElementType.Folder, children: [] },
+                 { name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: [] },
+                 { name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: [] }]
+    });
+
+    component.model = model;
+    component.select(model.children[1]);
+    component.cutElement();
+    component.select(model.children[2]);
+
+    // when
+    const pasteDisabled = component.pasteDisabled;
+
+    // then
+    expect(pasteDisabled).toBeTruthy();
   });
 
 });
