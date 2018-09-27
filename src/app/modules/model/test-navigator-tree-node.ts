@@ -1,6 +1,7 @@
 import { TreeNode } from '@testeditor/testeditor-commons';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+import { isDevMode } from '@angular/core';
 
 export class TestNavigatorTreeNode implements TreeNode {
   private static readonly hideCssClass = 'hidden';
@@ -144,6 +145,17 @@ export class TestNavigatorTreeNode implements TreeNode {
       this.parent.removeChild(this);
       if (!this.isFiltered()) {
         this.parent.updateValidation(this._validation.negate());
+      }
+    } else {
+      this.log('ERROR: cannot remove root element');
+    }
+  }
+
+  log(message: string, payload?: any) {
+    if (isDevMode()) {
+      console.log(message);
+      if (payload !== undefined) {
+        console.log(payload);
       }
     }
   }

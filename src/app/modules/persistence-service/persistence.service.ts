@@ -36,6 +36,17 @@ export class PersistenceService extends AbstractPersistenceService {
     return await client.get<WorkspaceElement>(this.listFilesUrl).toPromise();
   }
 
+  /** copy either a file to its new location (new location is the new filename),
+      or copy whole directories (newPath is the path to the new directory to be created) */
+  async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
+    const client = await this.httpProvider.getHttpClient();
+    try {
+      return (await client.post(this.getCopyURL(newPath, sourcePath), '', { observe: 'response', responseType: 'text'}).toPromise()).body;
+    } catch (errorResponse) {
+      return this.getConflictOrThrowError(errorResponse);
+    }
+  }
+
   async renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
     const client = await this.httpProvider.getHttpClient();
     try {
@@ -71,6 +82,10 @@ export class PersistenceService extends AbstractPersistenceService {
 
   private getRenameURL(path: string): string {
     return this.getURL(path) + '?rename';
+  }
+
+  private getCopyURL(path: string, sourcePath: string): string {
+    return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath);
   }
 
   private getURL(path: string): string {

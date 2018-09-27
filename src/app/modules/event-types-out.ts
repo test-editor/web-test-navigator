@@ -15,3 +15,9 @@ export const WORKSPACE_RETRIEVED_FAILED = 'workspace.retrieved.failed';
 
 // payload is the selected TreeNode (must be a tcl)
 export const TEST_SELECTED = 'test.selected';
+
+export interface SnackbarMessage {
+  message: string;
+  timeout?: number;
+}
+export const SNACKBAR_DISPLAY_NOTIFICATION = 'snackbar.display.notification';
