@@ -135,6 +135,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   private async updateValidationMarkers(root: TestNavigatorTreeNode) {
+    await this.indexService.refresh();
     const markers = await this.validationMarkerService.getAllMarkerSummaries();
     this.log('received validation markers from server: ', markers);
     root.forEach((node) => {
@@ -180,7 +181,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       }
     }));
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
-      this.indexService.refresh().then(() => this.updateValidationMarkers(this.model));
+      this.updateValidationMarkers(this.model);
     }));
 
     this.messagingService.publish(NAVIGATION_OPEN, node);
