@@ -34,7 +34,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   }
 
   setVisible(showNotHide: boolean): void {
-    if (this.isVisible() !== showNotHide) {
+    if (this.isFiltered() === showNotHide) {
       if (showNotHide) {
         this.cssClasses = this.removeFromCssClasses(this.cssClasses, TestNavigatorTreeNode.hideCssClass);
         if (this.parent) {
@@ -49,8 +49,8 @@ export class TestNavigatorTreeNode implements TreeNode {
     }
   }
 
-  isVisible(): boolean {
-    return !this.cssClasses.includes(TestNavigatorTreeNode.hideCssClass);
+  isFiltered(): boolean {
+    return this.cssClasses.includes(TestNavigatorTreeNode.hideCssClass);
   }
 
   private removeFromCssClasses(cssClasses: string, classToRemove: string): string {
@@ -91,7 +91,7 @@ export class TestNavigatorTreeNode implements TreeNode {
     if (this.type === ElementType.File) {
       const difference = value.subtract(this._validation);
       this._validation = value;
-      if (this.parent && this.isVisible()) {
+      if (this.parent && !this.isFiltered()) {
         this.parent.updateValidation(difference);
       }
     }
@@ -142,7 +142,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   remove() {
     if (this.parent) {
       this.parent.removeChild(this);
-      if (this.isVisible()) {
+      if (!this.isFiltered()) {
         this.parent.updateValidation(this._validation.negate());
       }
     }
