@@ -34,6 +34,7 @@ describe('TestNavigatorComponent', () => {
     validationMarkerMap.set('src/test/java/test.tcl', {errors: 1, warnings: 2, infos: 3});
     validationMarkerMap.set('src/test/java/test.tsl', {errors: 0, warnings: 1, infos: 2});
     when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
+    when(mockIndexService.refresh()).thenResolve([]);
 
     mockFilenameValidator = mock(FilenameValidator);
     when(mockFilenameValidator.isValidName(anyString(), anything())).thenReturn(true);
