@@ -91,7 +91,7 @@ export class TestNavigatorTreeNode implements TreeNode {
     if (this.type === ElementType.File) {
       const difference = value.subtract(this._validation);
       this._validation = value;
-      if (this.parent) {
+      if (this.parent && this.isVisible()) {
         this.parent.updateValidation(difference);
       }
     }
@@ -142,7 +142,9 @@ export class TestNavigatorTreeNode implements TreeNode {
   remove() {
     if (this.parent) {
       this.parent.removeChild(this);
-      this.parent.updateValidation(this._validation.negate());
+      if (this.isVisible()) {
+        this.parent.updateValidation(this._validation.negate());
+      }
     }
   }
 
