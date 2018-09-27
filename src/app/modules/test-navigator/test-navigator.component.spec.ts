@@ -646,14 +646,8 @@ describe('TestNavigatorComponent', () => {
       children: []
     });
 
-    // when
-    try {
-      component.uniqifyTargetId(fullTargetFolder, file);
-      fail('should raise an exception');
-    } catch (error) {
-      // then
-      expect().nothing();
-    }
+    // when + then
+    expect(() => component.uniqifyTargetId(fullTargetFolder, file)).toThrowError();
 
   });
 
@@ -674,14 +668,8 @@ describe('TestNavigatorComponent', () => {
       children: []
     });
 
-    // when
-    try {
-      component.uniqifyTargetId(emptyTargetFolder, file);
-      fail('invalid filename should throw an exception');
-    } catch (error) {
-      // then
-      expect().nothing();
-    }
+    // when + then
+    expect(() => component.uniqifyTargetId(emptyTargetFolder, file)).toThrowError(new RegExp('.*is an invalid filename.$'));
   });
 
   it('enables paste if cutted is a file and target is a folder other than the clipped\' parent', () => {

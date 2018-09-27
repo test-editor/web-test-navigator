@@ -405,7 +405,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     return createdId;
   }
 
-  /** currently working only of the clipped element is a file! */
+  /** currently working only if the clipped element is a file! */
   async pasteElement(): Promise<void> {
     if (!this.pasteDisabled) {
       try {
