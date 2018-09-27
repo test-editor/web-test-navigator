@@ -1,4 +1,4 @@
-import { Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
+import { Component, isDevMode, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
          TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
@@ -63,13 +63,13 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
               private filenameValidator: FilenameValidator,
               private persistenceService: PersistenceService,
               private validationMarkerService: ValidationMarkerService,
+              private changeDetector: ChangeDetectorRef,
               indicators: IndicatorFieldSetup) {
     this.treeConfig.indicatorFields = indicators.fields;
   }
 
   ngOnInit() {
     this.updateModel();
-    this.setupRepoChangeListeners();
     this.setupTreeSelectionChangeListener();
   }
 
@@ -114,16 +114,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.model.forEach((node) => (node as TestNavigatorTreeNode).setVisible(filterFor(state, node)));
   }
 
-  /**
-     * listen to events that changed the repository (currently only editor save completed events)
-     * inform index to refresh itself
-     */
-  private setupRepoChangeListeners(): void {
-    this.fileSavedSubscription = this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
-      this.refreshIndex();
-    });
-  }
-
   private async retryingListTreeNodes(retryCount: number): Promise<TestNavigatorTreeNode> {
     try {
       const root = (await this.filteredTreeService.listTreeNodes())
@@ -145,13 +135,12 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   private async updateValidationMarkers(root: TestNavigatorTreeNode) {
-    const validationMarkers = await this.validationMarkerService.getAllMarkerSummaries();
-    this.log('received validation markers from server: ', JSON.stringify(validationMarkers));
+    const markers = await this.validationMarkerService.getAllMarkerSummaries();
+    this.log('received validation markers from server: ', markers);
     root.forEach((node) => {
-      if (validationMarkers.has(node.id)) {
-        node.validation = new ValidationMarkerSummary(validationMarkers.get(node.id));
-      }
+        node.validation = markers.has(node.id) ? new ValidationMarkerSummary(markers.get(node.id)) : ValidationMarkerSummary.zero;
     });
+    this.changeDetector.detectChanges();
   }
 
   /** called by button bar to completely load the index anew and load the workspace thereafter */
@@ -183,12 +172,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     await this.updateModel();
   }
 
-  /** update the index (with delta from repo if available) and load the workspace thereafter */
-  private async refreshIndex(): Promise<void> {
-    await this.indexService.refresh();
-    await this.updateModel();
-  }
-
   private open(node: TestNavigatorTreeNode) {
     this.openFilesSubscriptions.remove(node);
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload) => {
@@ -197,7 +180,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       }
     }));
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
-      this.updateValidationMarkers(this.model);
+      this.indexService.refresh().then(() => this.updateValidationMarkers(this.model));
     }));
 
     this.messagingService.publish(NAVIGATION_OPEN, node);
