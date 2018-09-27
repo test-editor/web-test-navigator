@@ -78,7 +78,7 @@ describe('TestNavigatorComponent', () => {
   }
 
   function selectFirstElementClickRenameEnterTextAndHitEnter(newName: string) {
-    const firstNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+    const firstNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
     const renameButton = fixture.debugElement.query(By.css('#rename'));
     firstNode.nativeElement.click(); fixture.detectChanges();
     renameButton.nativeElement.click(); fixture.detectChanges();
@@ -89,7 +89,7 @@ describe('TestNavigatorComponent', () => {
   }
 
   function selectFirstElementClickNewFileEnterTextAndHitEnter(newName: string) {
-    const firstNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+    const firstNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
     const newFileButton = fixture.debugElement.query(By.css('#new-file'));
     firstNode.nativeElement.click(); fixture.detectChanges();
     newFileButton.nativeElement.click(); fixture.detectChanges();
@@ -209,8 +209,8 @@ describe('TestNavigatorComponent', () => {
     tick(); fixture.detectChanges();
 
     // then
-    const tslFile = component.model.children[1];
-    const tclFile = component.model.children[0];
+    const tslFile = component.model.children[2];
+    const tclFile = component.model.children[1];
     expect(tclFile.validation).toEqual(jasmine.objectContaining({errors: 1, warnings: 2, infos: 3}));
     expect(tslFile.validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
     expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 1, warnings: 3, infos: 5}));
@@ -249,7 +249,7 @@ describe('TestNavigatorComponent', () => {
 
     // then
     expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 23, warnings: 42, infos: 3}));
-    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 23, warnings: 42, infos: 3}));
+    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 23, warnings: 42, infos: 3}));
   }));
 
   it('updates validation markers after a rename', fakeAsync(async () => {
@@ -268,8 +268,8 @@ describe('TestNavigatorComponent', () => {
 
     // then
     expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 5, infos: 7}));
-    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
-    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
+    expect(component.model.children[2].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
   }));
 
   it('updates validation markers after a node is added', fakeAsync(async () => {
@@ -290,8 +290,8 @@ describe('TestNavigatorComponent', () => {
     // then
     expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 9, warnings: 9, infos: 9}));
     expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 6, warnings: 4, infos: 2}));
-    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
-    expect(component.model.children[2].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+    expect(component.model.children[2].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
+    expect(component.model.children[3].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
   }));
 
   it('updates validation markers when an open file is saved', fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
@@ -299,7 +299,7 @@ describe('TestNavigatorComponent', () => {
     await component.updateModel();
     component.model.expanded = true;
     fixture.detectChanges();
-    const firstNode = fixture.debugElement.query(By.css('.tree-view .tree-view .tree-view-item-key'));
+    const firstNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
 
     const validationMarkerMap = new Map<string, ValidationMarkerData>();
     validationMarkerMap.set('src/test/java/test.tcl', {errors: 3, warnings: 4, infos: 5});
@@ -315,8 +315,8 @@ describe('TestNavigatorComponent', () => {
 
     // then
     expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 5, infos: 7}));
-    expect(component.model.children[0].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
-    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
+    expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 4, infos: 5}));
+    expect(component.model.children[2].validation).toEqual(jasmine.objectContaining({errors: 0, warnings: 1, infos: 2}));
   })));
 
 
