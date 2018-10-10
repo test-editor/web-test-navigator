@@ -199,6 +199,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       const contextNode = this.selectedNode;
       const parentNode = contextNode.type === ElementType.Folder ? contextNode : contextNode.parent;
       const payload: TreeViewerInputBoxConfig = {
+        root: this.model.root,
         indent: contextNode.type === ElementType.Folder,
         validateName: (newName: string) => this.validateName(newName, type),
         onConfirm: async (newName: string) => {
@@ -225,6 +226,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     if (this.selectedNode) {
       const selectedNode = this.selectedNode;
       const payload: InputBoxConfig = {
+        root: this.model.root,
         validateName: (newName: string) => this.validateName(newName, selectedNode.type),
         onConfirm: async (newName: string) => {
           const pathElements = selectedNode.id.split('/');
