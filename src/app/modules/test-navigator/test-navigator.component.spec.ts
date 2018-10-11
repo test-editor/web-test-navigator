@@ -326,7 +326,7 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
 
     // when
-    component.select(component.model.children[0]);
+    component.select(component.model.children[2]);
     fixture.detectChanges();
 
     // then
@@ -336,6 +336,23 @@ describe('TestNavigatorComponent', () => {
     expect(cutButton.disabled).toBeFalsy();
     expect(copyButton.disabled).toBeFalsy();
   });
+
+  it('deactivates cut and copy button if selection is a folder', async () => {
+    await component.updateModel();
+    fixture.detectChanges();
+
+    // when
+    component.select(component.model);
+    fixture.detectChanges();
+
+    // then
+    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
+    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
+
+    expect(cutButton.disabled).toBeTruthy();
+    expect(copyButton.disabled).toBeTruthy();
+  });
+
 
   it('deactivates cut and copy button if no selection is active', () => {
     // given
@@ -357,7 +374,7 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
 
     // when
-    component.select(component.model.children[0]);
+    component.select(component.model.children[2]);
     fixture.detectChanges();
     const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
     cutButton.click();
@@ -373,7 +390,7 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
 
     // when
-    component.select(component.model.children[0]);
+    component.select(component.model.children[2]);
     fixture.detectChanges();
     const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
     copyButton.click();
@@ -387,7 +404,7 @@ describe('TestNavigatorComponent', () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
-    component.select(component.model.children[0]);
+    component.select(component.model.children[2]);
     fixture.detectChanges();
     const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
     copyButton.click();
@@ -408,7 +425,7 @@ describe('TestNavigatorComponent', () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
-    component.select(component.model.children[0]);
+    component.select(component.model.children[2]);
     fixture.detectChanges();
     const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
     cutButton.click();
