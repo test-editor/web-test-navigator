@@ -465,6 +465,14 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     }
   }
 
+  get cutDisabled(): boolean {
+    return !(this.selectedNode && this.selectedNode.type === ElementType.File);
+  }
+
+  get copyDisabled(): boolean {
+    return !(this.selectedNode && this.selectedNode.type === ElementType.File);
+  }
+
   get pasteDisabled(): boolean {
     return this.pasteRunning ||
       !(this.nodeClipped && this.nodeClipped.type === ElementType.File
@@ -488,4 +496,5 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   hasCopiedNodeInClipboard(): boolean {
     return this.nodeClipped !== null && this.clippedBy === 'copy';
   }
+
 }

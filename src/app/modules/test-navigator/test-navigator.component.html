@@ -4,9 +4,9 @@
       <button id="new-file" class="icon fa fa-file" [disabled]="!selectedNode" (click)="newElement('file')" title="create new file"></button>
       <button id="new-folder" class="icon fa fa-folder" [disabled]="!selectedNode" (click)="newElement('folder')" title="create new folder"></button>
       <div class="divider"></div>
-      <button id="cut" class="icon fa fa-cut" [disabled]="!selectedNode" (click)="cutElement()" title="cut file/folder"></button>
-      <button id="copy" class="icon fa fa-copy" [disabled]="!selectedNode" (click)="copyElement()" title="copy file/folder"></button>
-      <button id="paste" class="icon fa fa-paste" [disabled]="pasteDisabled" (click)="pasteElement()" title="paste file/folder"></button>
+      <button id="cut" class="icon fa fa-cut" [disabled]="cutDisabled" (click)="cutElement()" title="cut file"></button>
+      <button id="copy" class="icon fa fa-copy" [disabled]="copyDisabled" (click)="copyElement()" title="copy file"></button>
+      <button id="paste" class="icon fa fa-paste" [disabled]="pasteDisabled" (click)="pasteElement()" title="paste file"></button>
       <div class="divider"></div>
       <button id="rename" class="icon fa fa-edit" [disabled]="renameDisabled" (click)="renameElement()" [title]="renameHoverText"></button>
     </div>
