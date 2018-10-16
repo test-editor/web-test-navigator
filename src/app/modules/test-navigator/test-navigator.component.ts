@@ -4,7 +4,7 @@ import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig
          TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
        } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED  } from '../event-types-in';
+import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, EDITOR_CLOSE  } from '../event-types-in';
 import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
          WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED } from '../event-types-out';
 import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
@@ -205,8 +205,16 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         node.dirty = payload.dirty;
       }
     }));
-    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
       this.updateValidationMarkers(this.model);
+      // if (node.id === payload.path) {
+      //   node.dirty = false;
+      // }
+    }));
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
+      if (node.id === payload.path) {
+        node.dirty = false;
+      }
     }));
 
     this.messagingService.publish(NAVIGATION_OPEN, node);
