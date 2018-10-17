@@ -20,5 +20,5 @@
   </div>
   <div *ngIf="errorMessage" id="errorMessage" class="alert alert-danger">{{errorMessage}}</div>
   <div *ngIf="notification" id="notification" class="alert alert-info">{{notification}}</div>
-  <app-filter-bar (filtersChanged)="onFiltersChanged($event)"></app-filter-bar>
+  <app-filter-bar [getFilteredOutMarkers]="getFilteredOutMarkers" (filtersChanged)="onFiltersChanged($event)"></app-filter-bar>
 </div>

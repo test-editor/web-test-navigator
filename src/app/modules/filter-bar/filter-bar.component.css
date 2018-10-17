@@ -5,3 +5,9 @@
 #filter-bar > label {
   flex-grow: 1;
 }
+
+.validation-marker {
+  font-size: .8em;
+  margin-top: 25%;
+  margin-left: 25%
+}

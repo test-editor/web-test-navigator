@@ -7,9 +7,9 @@ import { Subscription } from 'rxjs/Subscription';
 import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED  } from '../event-types-in';
 import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
          WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED } from '../event-types-out';
-import { FilterState } from '../filter-bar/filter-bar.component';
+import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
-import { filterFor, testNavigatorFilter } from '../model/filters';
+import { filterFor, testNavigatorFilter, isFileOfType } from '../model/filters';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { isConflict, Conflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
@@ -65,6 +65,14 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))),
     indicatorFields: []
   };
+
+  getFilteredOutMarkers = (type: FilterType) => {
+    let markers = ValidationMarkerSummary.zero;
+    if (this.filterState && !this.filterState[type] && (this.filterState.aml || this.filterState.tsl || this.filterState.tcl)) {
+      this.model.forEach((node) => isFileOfType(node.id, type) ? markers = markers.add(node.validation) : {});
+    }
+    return markers;
+  }
 
   constructor(private filteredTreeService: TreeFilterService,
               private messagingService: MessagingService,

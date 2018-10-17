@@ -1,7 +1,7 @@
 import { TreeNode } from '@testeditor/testeditor-commons';
 import { TestNavigatorTreeNode } from './test-navigator-tree-node';
 import { ElementType } from '../persistence-service/workspace-element';
-import { FilterState } from '../filter-bar/filter-bar.component';
+import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
 
   export type Filter = (node: TreeNode) => boolean;
 
@@ -24,6 +24,14 @@ import { FilterState } from '../filter-bar/filter-bar.component';
       ( state.tcl && (isTclFile(node.id) || isConfigFile(node.id) || isTmlFile(node.id)) ) ||
       ( state.aml && isAmlFile(node.id) )
     );
+  }
+
+  export function isFileOfType(path: string, type: FilterType): boolean {
+    switch (type) {
+      case 'tsl': return isTslFile(path);
+      case 'tcl': return isTclFile(path) || isConfigFile(path) || isTmlFile(path);
+      case 'aml': return isAmlFile(path);
+    }
   }
 
   export function isTslFile(path: string): boolean { return tslFileRegex.test(path); }

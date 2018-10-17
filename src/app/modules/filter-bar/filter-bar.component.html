@@ -1,8 +1,38 @@
 <div id="filter-bar" class="btn-group">
-  <label class="btn btn-dark" [(ngModel)]="filters.tsl" title="filter for specifications"
-         btnCheckbox tabindex="0" role="button" (click)="onClick()"><i class="fa fa-file tsl-file-color"></i></label>
-  <label class="btn btn-dark" [(ngModel)]="filters.tcl" title="filter for tests"
-         btnCheckbox tabindex="0" role="button" (click)="onClick()"><i class="fa fa-file tcl-file-color"></i></label>
-  <label class="btn btn-dark" [(ngModel)]="filters.aml" title="filter for application mappings"
-         btnCheckbox tabindex="0" role="button" (click)="onClick()"><i class="fa fa-file aml-file-color"></i></label>
+  <label id="filter-tsl" class="btn btn-dark" [(ngModel)]="filters.tsl" title="filter for specifications"
+         btnCheckbox tabindex="0" role="button" (click)="onClick()">
+    <span class="fa-stack">
+      <i class="fa fa-file fa-stack-1x tsl-file-color"></i>
+      <i class="fa fa-stack-1x validation-marker"
+         [ngClass]="{
+           'fa-exclamation-circle validation-errors': showValidationMarkers('tsl', 'errors'),
+           'fa-exclamation-triangle validation-warnings': showValidationMarkers('tsl', 'warnings'),
+           'fa-info-circle validation-infos': showValidationMarkers('tsl', 'infos')
+          }"></i>
+    </span>
+  </label>
+  <label id="filter-tcl" class="btn btn-dark" [(ngModel)]="filters.tcl" title="filter for tests"
+         btnCheckbox tabindex="0" role="button" (click)="onClick()">
+    <span class="fa-stack">
+        <i class="fa fa-file tcl-file-color"></i>
+        <i class="fa fa-stack-1x validation-marker"
+        [ngClass]="{
+          'fa-exclamation-circle validation-errors': showValidationMarkers('tcl', 'errors'),
+          'fa-exclamation-triangle validation-warnings': showValidationMarkers('tcl', 'warnings'),
+          'fa-info-circle validation-infos': showValidationMarkers('tcl', 'infos')
+         }"></i>
+    </span>
+  </label>
+  <label id="filter-aml" class="btn btn-dark" [(ngModel)]="filters.aml" title="filter for application mappings"
+         btnCheckbox tabindex="0" role="button" (click)="onClick()">
+    <span class="fa-stack">
+        <i class="fa fa-file aml-file-color"></i>
+        <i class="fa fa-stack-1x validation-marker"
+        [ngClass]="{
+          'fa-exclamation-circle validation-errors': showValidationMarkers('aml', 'errors'),
+          'fa-exclamation-triangle validation-warnings': showValidationMarkers('aml', 'warnings'),
+          'fa-info-circle validation-infos': showValidationMarkers('aml', 'infos')
+         }"></i>
+    </span>
+  </label>
 </div>
