@@ -1,5 +1,7 @@
 import { Component, OnInit, Output, EventEmitter, Input, ChangeDetectorRef } from '@angular/core';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+import { MessagingService } from '@testeditor/messaging-service';
+import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 
 export interface FilterState { tsl: boolean; tcl: boolean; aml: boolean; }
 export type FilterType = 'tsl' | 'tcl' | 'aml';
@@ -15,9 +17,10 @@ export class FilterBarComponent implements OnInit {
   @Input() getFilteredOutMarkers: (type: FilterType) => ValidationMarkerSummary;
   @Output() filtersChanged: EventEmitter<FilterState> = new EventEmitter<FilterState>();
 
-  constructor(private changeDetector: ChangeDetectorRef) { }
+  constructor(private changeDetector: ChangeDetectorRef, private messagingService: MessagingService) { }
 
   ngOnInit() {
+    this.messagingService.subscribe(WORKSPACE_MARKER_UPDATE, () => this.updateFilteredOutMarkers());
   }
 
   onClick() {
