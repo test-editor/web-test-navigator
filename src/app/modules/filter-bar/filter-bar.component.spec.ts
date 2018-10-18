@@ -72,10 +72,10 @@ describe('FilterBarComponent', () => {
     expect(hostComponent.filterState.aml).toBeFalsy();
   }));
 
-  ['tcl', 'tsl', 'aml'].forEach((type: 'tcl' | 'tsl' | 'aml') =>
+  ['tcl', 'tsl', 'aml'].forEach((type: FilterType) =>
   it(`never shows ${type} validation markers when ${type} files are not being filtered out`, fakeAsync(() => {
     // given
-    hostComponent.filterState = { tsl: true, tcl: true, aml: true };
+    hostComponent.getFilteredOutMarkers = () => ValidationMarkerSummary.zero;
 
     // when
     const actual = hostComponent.filterBarUnderTest.showValidationMarkers(type, 'errors');

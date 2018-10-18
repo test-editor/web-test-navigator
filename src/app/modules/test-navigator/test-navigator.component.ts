@@ -69,10 +69,14 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   /* get markers that are not visible in the test navigator, since affected files are filtered by the current FilterState */
   getFilteredOutMarkers = (type: FilterType) => {
     let markers = ValidationMarkerSummary.zero;
-    if (this.filterState && !this.filterState[type] && (this.filterState.aml || this.filterState.tsl || this.filterState.tcl)) {
+    if (this.filterState && !this.filterState[type] && this.hasActiveFilter) {
       this.model.forEach((node) => isFileOfType(node.id, type) ? markers = markers.add(node.validation) : {});
     }
     return markers;
+  }
+
+  private get hasActiveFilter(): boolean {
+    return this.filterState.aml || this.filterState.tsl || this.filterState.tcl;
   }
 
   constructor(private filteredTreeService: TreeFilterService,
