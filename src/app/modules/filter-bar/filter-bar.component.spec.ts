@@ -109,10 +109,12 @@ describe('FilterBarComponent', () => {
 
   it('sets the right css classes to display error markers on types that have been filtered out', () => {
     // given
-    hostComponent.filterState = { tsl: false, tcl: true, aml: true };
+    const tclButton = fixture.debugElement.query(By.css('#filter-tcl')).nativeElement;
+    const amlButton = fixture.debugElement.query(By.css('#filter-aml')).nativeElement;
 
     // when
-    fixture.detectChanges();
+    tclButton.click();
+    amlButton.click();
 
     // then
     const markerIcon = fixture.debugElement.query(By.css('#filter-tsl .validation-marker'));
@@ -127,10 +129,12 @@ describe('FilterBarComponent', () => {
 
   it('sets the right css classes to display warning markers on types that have been filtered out', () => {
     // given
-    hostComponent.filterState = { tsl: true, tcl: false, aml: true };
+    const tslButton = fixture.debugElement.query(By.css('#filter-tsl')).nativeElement;
+    const amlButton = fixture.debugElement.query(By.css('#filter-aml')).nativeElement;
 
     // when
-    fixture.detectChanges();
+    tslButton.click();
+    amlButton.click();
 
     // then
     const markerIcon = fixture.debugElement.query(By.css('#filter-tcl .validation-marker'));
@@ -145,10 +149,12 @@ describe('FilterBarComponent', () => {
 
   it('sets the right css classes to display info markers on types that have been filtered out', () => {
     // given
-    hostComponent.filterState = { tsl: true, tcl: true, aml: false };
+    const tclButton = fixture.debugElement.query(By.css('#filter-tcl')).nativeElement;
+    const tslButton = fixture.debugElement.query(By.css('#filter-tsl')).nativeElement;
 
     // when
-    fixture.detectChanges();
+    tclButton.click();
+    tslButton.click();
 
     // then
     const markerIcon = fixture.debugElement.query(By.css('#filter-aml .validation-marker'));
