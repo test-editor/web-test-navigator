@@ -32,8 +32,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private readonly WORKSPACE_LOAD_RETRY_COUNT = 3;
 
   public refreshClassValue = '';
+  public selectedNode: TestNavigatorTreeNode = null;
+  public readonly elementTypes = ElementType;
 
-  private selectedNode: TestNavigatorTreeNode = null;
   private nodeClipped: TestNavigatorTreeNode = null;
   private clippedBy: ClipType = null;
   private pasteRunning = false;
@@ -176,7 +177,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   /** currently running a refresh ? */
-  private refreshRunning(): boolean {
+  public refreshRunning(): boolean {
     return this.refreshClassValue !== '';
   }
 
