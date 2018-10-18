@@ -9,32 +9,18 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
       states: [{
         condition: (node: TestNavigatorTreeNode) => node.validation.errors > 0,
         cssClasses: 'fa fa-exclamation-circle validation-errors',
-        label: (node: TestNavigatorTreeNode) => this.validationLabel(node)
+        label: (node: TestNavigatorTreeNode) => node.validation.toString()
       }, {
         condition: (node: TestNavigatorTreeNode) => node.validation.errors <= 0 && node.validation.warnings > 0,
         cssClasses: 'fa fa-exclamation-triangle validation-warnings',
-        label: (node: TestNavigatorTreeNode) => this.validationLabel(node)
+        label: (node: TestNavigatorTreeNode) => node.validation.toString()
       }, {
         condition: (node: TestNavigatorTreeNode) =>
           node.validation.errors <= 0 && node.validation.warnings <= 0 && node.validation.infos > 0,
         cssClasses: 'fa fa-info-circle validation-infos',
-        label: (node: TestNavigatorTreeNode) => this.validationLabel(node)
+        label: (node: TestNavigatorTreeNode) => node.validation.toString()
       }]
     }
   ];
-
-  private validationLabel(node: TestNavigatorTreeNode): string {
-    const label: string[] = [];
-    if (node.validation.errors > 0) {
-      label.push(`${node.validation.errors} error(s)`);
-    }
-    if (node.validation.warnings > 0) {
-      label.push(`${node.validation.warnings} warning(s)`);
-    }
-    if (node.validation.infos > 0) {
-      label.push(`${node.validation.infos} info(s)`);
-    }
-    return label.join(', ');
-  }
 
 }

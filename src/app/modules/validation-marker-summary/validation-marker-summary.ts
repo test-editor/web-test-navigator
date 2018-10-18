@@ -10,6 +10,7 @@ export class ValidationMarkerSummary implements ValidationMarkerData {
   readonly errors: number;
   readonly warnings: number;
   readonly infos: number;
+  private label: string;
 
   constructor(values: ValidationMarkerData = ValidationMarkerSummary.zero) {
     this.errors = values.errors;
@@ -39,5 +40,22 @@ export class ValidationMarkerSummary implements ValidationMarkerData {
       warnings: -this.warnings,
       infos: -this.infos
     });
+  }
+
+  toString(): string {
+    if (!this.label) {
+      const labelElements: string[] = [];
+      if (this.errors > 0) {
+        labelElements.push(`${this.errors} error(s)`);
+      }
+      if (this.warnings > 0) {
+        labelElements.push(`${this.warnings} warning(s)`);
+      }
+      if (this.infos > 0) {
+        labelElements.push(`${this.infos} info(s)`);
+      }
+      this.label = labelElements.join(', ');
+    }
+    return this.label;
   }
 }
