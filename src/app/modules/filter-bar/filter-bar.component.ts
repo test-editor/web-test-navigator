@@ -24,10 +24,6 @@ export class FilterBarComponent implements OnInit {
     this.filtersChanged.emit({tsl: this.filters.tsl, tcl: this.filters.tcl, aml: this.filters.aml});
     this.updateFilteredOutMarkers();
   }
-  private updateFilteredOutMarkers() {
-    ['tsl', 'tcl', 'aml'].forEach((type: FilterType) => this.markers[type] = this.getFilteredOutMarkers(type));
-    this.changeDetector.detectChanges();
-  }
 
   showValidationMarkers(type: FilterType, severity: 'errors' | 'warnings' | 'infos'): boolean {
     switch (severity) {
@@ -35,6 +31,15 @@ export class FilterBarComponent implements OnInit {
       case 'warnings': return this.markers[type].errors <= 0 && this.markers[type].warnings > 0;
       case 'errors': return this.markers[type].errors > 0;
     }
+  }
+
+  private updateFilteredOutMarkers() {
+    ['tsl', 'tcl', 'aml'].forEach((type: FilterType) => this.markers[type] = this.getFilteredOutMarkers(type));
+    this.changeDetector.detectChanges();
+  }
+
+  public getMarkerLabel(type: FilterType): string {
+    return this.markers[type].toString();
   }
 
 }
