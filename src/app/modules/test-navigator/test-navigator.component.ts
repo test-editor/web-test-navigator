@@ -201,19 +201,20 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private open(node: TestNavigatorTreeNode) {
     this.openFilesSubscriptions.remove(node);
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload) => {
-      if (node.id === payload.path) {
+      if ((node.id === payload.path) && (node.dirty !== payload.dirty)) {
+        this.log('received ' + EDITOR_DIRTY_CHANGED + ' for this node, that changes dirty flag', payload);
         node.dirty = payload.dirty;
+        this.changeDetector.detectChanges(); // necessary to trigger rename button updates
       }
     }));
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
       this.updateValidationMarkers(this.model);
-      // if (node.id === payload.path) {
-      //   node.dirty = false;
-      // }
+      // no need to update any dirty markers for renames, since EDITOR_DIRTY_CHANGED will be received, too
     }));
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
       if (node.id === payload.path) {
-        node.dirty = false;
+        this.log('received ' + EDITOR_CLOSE + ' for this node', payload);
+        node.dirty = false; // no trigger necessary for updates (somehow) (see EDITOR_DIRTY_CHANGED subscription)
       }
     }));
 
@@ -333,7 +334,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       } else if (this.selectedNode === this.selectedNode.root) {
         result = 'cannot rename the root element';
       } else {
-        result = `rename "${this.selectedNode.name}`;
+        result = `rename "${this.selectedNode.name}"`;
       }
     }
     return result;

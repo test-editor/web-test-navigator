@@ -5,6 +5,7 @@ import { MessagingModule, MessagingService } from '@testeditor/messaging-service
 import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
+import { TEST_EXECUTION_STARTED, TEST_EXECUTION_START_FAILED, EDITOR_DIRTY_CHANGED, EDITOR_CLOSE } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
@@ -167,6 +168,49 @@ describe('TestNavigatorComponent', () => {
     expect(renameButton.nativeElement.disabled).toBeTruthy();
     expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
   });
+
+  it('disables rename if the file of the selected node has unsaved changes',
+      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+        await component.updateModel();
+        component.model.expanded = true;
+        component.model.children[1].dirty = false;
+        fixture.detectChanges();
+        const renameButton = fixture.debugElement.query(By.css('#rename'));
+        const testNode = fixture.debugElement.query(
+          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+
+        // when
+        testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+        messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: true });
+        tick();
+        fixture.detectChanges();
+
+        // then
+        expect(renameButton.nativeElement.disabled).toBeTruthy();
+        expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
+      })));
+
+  it('reactivates rename if file of the selected node had unsaved changes, but editor was closed',
+      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+        // given
+        await component.updateModel();
+        component.model.expanded = true;
+        component.model.children[1].dirty = true;
+        fixture.detectChanges();
+        const renameButton = fixture.debugElement.query(By.css('#rename'));
+        const testNode = fixture.debugElement.query(
+          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+
+        // when
+        testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+        messageBus.publish(EDITOR_CLOSE, { path: component.model.children[1].id });
+        tick();
+        fixture.detectChanges();
+
+        // then
+        expect(renameButton.nativeElement.disabled).toBeFalsy();
+        expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
+      })));
 
   it('removes element whose delete button was clicked from the tree, after user confirmed and backend responds with success',
     fakeAsync(async () => {
@@ -442,7 +486,7 @@ describe('TestNavigatorComponent', () => {
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
   });
 
-  it('paste deactivated if no (target) selection is present', async () => {
+  it('deactivates paste if no (target) selection is present', async () => {
     // given
     await component.updateModel();
     fixture.detectChanges();
