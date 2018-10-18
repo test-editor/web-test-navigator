@@ -8,7 +8,7 @@
            'fa-exclamation-circle validation-errors': showValidationMarkers('tsl', 'errors'),
            'fa-exclamation-triangle validation-warnings': showValidationMarkers('tsl', 'warnings'),
            'fa-info-circle validation-infos': showValidationMarkers('tsl', 'infos')
-          }"></i>
+          }" [title]="getMarkerLabel('tsl')"></i>
     </span>
   </label>
   <label id="filter-tcl" class="btn btn-dark" [(ngModel)]="filters.tcl" title="filter for tests"
@@ -20,7 +20,7 @@
           'fa-exclamation-circle validation-errors': showValidationMarkers('tcl', 'errors'),
           'fa-exclamation-triangle validation-warnings': showValidationMarkers('tcl', 'warnings'),
           'fa-info-circle validation-infos': showValidationMarkers('tcl', 'infos')
-         }"></i>
+         }" [title]="getMarkerLabel('tcl')"></i>
     </span>
   </label>
   <label id="filter-aml" class="btn btn-dark" [(ngModel)]="filters.aml" title="filter for application mappings"
@@ -32,7 +32,7 @@
           'fa-exclamation-circle validation-errors': showValidationMarkers('aml', 'errors'),
           'fa-exclamation-triangle validation-warnings': showValidationMarkers('aml', 'warnings'),
           'fa-info-circle validation-infos': showValidationMarkers('aml', 'infos')
-         }"></i>
+         }" [title]="getMarkerLabel('aml')"></i>
     </span>
   </label>
 </div>
