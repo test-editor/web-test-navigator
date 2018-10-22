@@ -169,6 +169,29 @@ describe('TestNavigatorComponent', () => {
     expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
   });
 
+  it('enables rename if the file of the selected node was saved and has no changes anymore',
+      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+        await component.updateModel();
+        component.model.expanded = true;
+        component.model.children[1].dirty = true;
+        fixture.detectChanges();
+        const renameButton = fixture.debugElement.query(By.css('#rename'));
+        const testNode = fixture.debugElement.query(
+          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+
+        // when
+        // register for events of the node for an open editor file
+        testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+        // this event should be listened for because of the registeration
+        messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: false });
+        tick();
+        fixture.detectChanges();
+
+        // then
+        expect(renameButton.nativeElement.disabled).toBeFalsy();
+        expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
+      })));
+
   it('disables rename if the file of the selected node has unsaved changes',
       fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
         await component.updateModel();
@@ -180,7 +203,9 @@ describe('TestNavigatorComponent', () => {
           By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
 
         // when
+        // register for events of the node for an open editor file
         testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+        // this event should be listened for because of the registeration
         messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: true });
         tick();
         fixture.detectChanges();
