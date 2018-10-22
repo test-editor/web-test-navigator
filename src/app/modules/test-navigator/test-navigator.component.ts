@@ -165,7 +165,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         node.validation = markers.has(node.id) ? new ValidationMarkerSummary(markers.get(node.id)) : ValidationMarkerSummary.zero;
     });
     this.changeDetector.detectChanges();
-    this.messagingService.publish(WORKSPACE_MARKER_UPDATE, {});
+    this.messagingService.publish(WORKSPACE_MARKER_UPDATE, markers);
   }
 
   /** called by button bar to completely load the index anew and load the workspace thereafter */
