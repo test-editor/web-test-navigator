@@ -19,6 +19,7 @@ import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 
 export type ClipType = 'cut' | 'copy' | null;
 
@@ -157,7 +158,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async updateValidationMarkers(root: TestNavigatorTreeNode) {
+  public async updateValidationMarkers(root: TestNavigatorTreeNode) {
     await this.indexService.refresh();
     const markers = await this.validationMarkerService.getAllMarkerSummaries();
     this.log('received validation markers from server: ', markers);
@@ -165,6 +166,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         node.validation = markers.has(node.id) ? new ValidationMarkerSummary(markers.get(node.id)) : ValidationMarkerSummary.zero;
     });
     this.changeDetector.detectChanges();
+    this.messagingService.publish(WORKSPACE_MARKER_UPDATE, markers);
   }
 
   /** called by button bar to completely load the index anew and load the workspace thereafter */

@@ -19,6 +19,7 @@ import { ValidationMarkerData } from '../validation-marker-summary/validation-ma
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 import { XtextIndexService } from '../index-service/xtext-index.service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -781,5 +782,20 @@ describe('TestNavigatorComponent', () => {
     // then
     expect(pasteDisabled).toBeTruthy();
   });
+
+  it('emits WORKSPACE_MARKER_UPDATE event after the validation markers have been updated',
+    fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    let eventReceived = false;
+    messageBus.subscribe(WORKSPACE_MARKER_UPDATE, () => eventReceived = true);
+
+    // when
+    await component.updateValidationMarkers(component.model);
+    tick();
+
+    // then
+    expect(eventReceived).toBeTruthy();
+  })));
 
 });

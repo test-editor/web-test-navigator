@@ -1,19 +1,21 @@
 import { Component, ViewChild } from '@angular/core';
-import { async, ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
+import { async, ComponentFixture, fakeAsync, TestBed, tick, inject } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { FilterBarComponent, FilterState, FilterType } from './filter-bar.component';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+import { MessagingService, MessagingModule } from '@testeditor/messaging-service';
+import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 
 @Component({
   selector: `app-host-component`,
   template: `<app-filter-bar [getFilteredOutMarkers]="getFilteredOutMarkers" (filtersChanged)="onFiltersChanged($event)"></app-filter-bar>`
 })
 class TestHostComponent {
-  private static markers = { tsl: new ValidationMarkerSummary({errors: 1, warnings: 2, infos: 3}),
-                             tcl: new ValidationMarkerSummary({errors: 0, warnings: 1, infos: 2}),
-                             aml: new ValidationMarkerSummary({errors: 0, warnings: 0, infos: 1})};
+  public static readonly markers = { tsl: new ValidationMarkerSummary({errors: 1, warnings: 2, infos: 3}),
+                                     tcl: new ValidationMarkerSummary({errors: 0, warnings: 1, infos: 2}),
+                                     aml: new ValidationMarkerSummary({errors: 0, warnings: 0, infos: 1})};
 
   public filterState: FilterState;
 
@@ -41,7 +43,7 @@ describe('FilterBarComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      imports: [ FormsModule, ButtonsModule.forRoot() ],
+      imports: [ FormsModule, ButtonsModule.forRoot(), MessagingModule.forRoot() ],
       declarations: [ TestHostComponent, FilterBarComponent ]
     })
     .compileComponents();
@@ -76,6 +78,7 @@ describe('FilterBarComponent', () => {
   it(`never shows ${type} validation markers when ${type} files are not being filtered out`, fakeAsync(() => {
     // given
     hostComponent.getFilteredOutMarkers = () => ValidationMarkerSummary.zero;
+    fixture.detectChanges();
 
     // when
     const actual = hostComponent.filterBarUnderTest.showValidationMarkers(type, 'errors');
@@ -175,8 +178,6 @@ describe('FilterBarComponent', () => {
     // when
     tclButton.click();
     amlButton.click();
-
-    // when
     fixture.detectChanges();
 
     // then
@@ -187,4 +188,24 @@ describe('FilterBarComponent', () => {
     expect(tclMarkerIcon.nativeElement['title']).toBeFalsy();
     expect(amlMarkerIcon.nativeElement['title']).toBeFalsy();
   });
+
+  it('updates filtered-out validation markers on WORKSPACE_MARKER_UPDATE event',
+    inject([MessagingService], (messageBus: MessagingService) => {
+    // given
+    hostComponent.getFilteredOutMarkers = (type: FilterType) => TestHostComponent.markers[type];
+    ['tcl', 'tsl', 'aml'].forEach((type: FilterType) => {
+      expect(hostComponent.filterBarUnderTest.markers[type]).toEqual(ValidationMarkerSummary.zero);
+    });
+    fixture.detectChanges();
+
+    // when
+    messageBus.publish(WORKSPACE_MARKER_UPDATE, {});
+
+    // then
+    ['tcl', 'tsl', 'aml'].forEach((type: FilterType) => {
+      expect(hostComponent.filterBarUnderTest.markers[type]).toEqual(TestHostComponent.markers[type]);
+      const markerIcon = fixture.debugElement.query(By.css(`#filter-${type} .validation-marker`));
+      expect(markerIcon.nativeElement['title']).toEqual(TestHostComponent.markers[type].toString());
+    });
+  }));
 });
