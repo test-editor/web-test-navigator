@@ -39,6 +39,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private nodeClipped: TestNavigatorTreeNode = null;
   private clippedBy: ClipType = null;
   private pasteRunning = false;
+  protected renameRunning = false; // visible for testing
 
   private fileSavedSubscription: Subscription;
   private treeSelectionChangeSubscription: Subscription;
@@ -254,6 +255,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   renameElement(): void {
     if (this.selectedNode) {
+      this.renameRunning = true;
       const selectedNode = this.selectedNode;
       const payload: InputBoxConfig = {
         root: this.model.root,
@@ -266,6 +268,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
             selectedNode.rename(newPath, newName);
             this.updateValidationMarkers(this.model);
           }
+          this.renameRunning = false;
           return requestSuccessful;
         }
       };
@@ -323,14 +326,14 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   get renameDisabled(): boolean {
-    return !this.selectedNode || this.selectedNode.dirty || this.selectedNode === this.selectedNode.root;
+    return this.renameRunning || !this.selectedNode || this.selectedNode === this.selectedNode.root;
   }
 
   get renameHoverText(): string {
     let result = 'cannot rename: no element selected';
     if (this.selectedNode) {
-      if (this.selectedNode.dirty) {
-        result = `cannot rename "${this.selectedNode.name}": unsaved changes`;
+      if (this.renameRunning) {
+        result = 'cannot rename until currently running rename finished';
       } else if (this.selectedNode === this.selectedNode.root) {
         result = 'cannot rename the root element';
       } else {

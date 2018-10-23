@@ -46,7 +46,7 @@ describe('TestNavigatorComponent', () => {
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
         {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []},
         {name: 'subfolder', path: 'src/test/java/subfolder', type: ElementType.Folder, children: []}
-    ]});
+      ]});
     when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
     when(mockPersistenceService.renameResource(anyString(), anyString())).thenResolve('');
     when(mockPersistenceService.createResource(anyString(), anything())).thenResolve('');
@@ -152,7 +152,7 @@ describe('TestNavigatorComponent', () => {
     expect(renameButton.nativeElement.disabled).toBeTruthy();
   });
 
-  it('disables rename button when selection is dirty', async () => {
+  it('keeps rename button active even when selection is dirty', async () => {
     // given
     await component.updateModel();
     component.model.expanded = true;
@@ -165,112 +165,131 @@ describe('TestNavigatorComponent', () => {
     testNode.nativeElement.click(); fixture.detectChanges();
 
     // then
-    expect(renameButton.nativeElement.disabled).toBeTruthy();
-    expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
+    expect(renameButton.nativeElement.disabled).toBeFalsy();
+    expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
   });
 
   it('enables rename if the file of the selected node was saved and has no changes anymore',
-      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
-        await component.updateModel();
-        component.model.expanded = true;
-        component.model.children[1].dirty = true;
-        fixture.detectChanges();
-        const renameButton = fixture.debugElement.query(By.css('#rename'));
-        const testNode = fixture.debugElement.query(
-          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+     fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+       await component.updateModel();
+       component.model.expanded = true;
+       component.model.children[1].dirty = true;
+       fixture.detectChanges();
+       const renameButton = fixture.debugElement.query(By.css('#rename'));
+       const testNode = fixture.debugElement.query(
+         By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
 
-        // when
-        // register for events of the node for an open editor file
-        testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
-        // this event should be listened for because of the registeration
-        messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: false });
-        tick();
-        fixture.detectChanges();
+       // when
+       // register for events of the node for an open editor file
+       testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+       // this event should be listened for because of the registeration
+       messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: false });
+       tick();
+       fixture.detectChanges();
 
-        // then
-        expect(renameButton.nativeElement.disabled).toBeFalsy();
-        expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
-      })));
+       // then
+       expect(renameButton.nativeElement.disabled).toBeFalsy();
+       expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
+     })));
 
-  it('disables rename if the file of the selected node has unsaved changes',
-      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
-        await component.updateModel();
-        component.model.expanded = true;
-        component.model.children[1].dirty = false;
-        fixture.detectChanges();
-        const renameButton = fixture.debugElement.query(By.css('#rename'));
-        const testNode = fixture.debugElement.query(
-          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+  it('disables rename if a rename is currently running', async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+    const renameButton = fixture.debugElement.query(By.css('#rename'));
+    const testNode = fixture.debugElement.query(
+      By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+    testNode.nativeElement.click();
 
-        // when
-        // register for events of the node for an open editor file
-        testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
-        // this event should be listened for because of the registeration
-        messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: true });
-        tick();
-        fixture.detectChanges();
+    // when
+    component.renameRunning = true;
+    fixture.detectChanges();
 
-        // then
-        expect(renameButton.nativeElement.disabled).toBeTruthy();
-        expect(renameButton.nativeElement['title']).toEqual('cannot rename "test.tcl": unsaved changes');
-      })));
+    // then
+    expect(renameButton.nativeElement.disabled).toBeTruthy();
+    expect(renameButton.nativeElement['title']).toEqual('cannot rename until currently running rename finished');
+  });
+
+  it('keeps rename active even if the file of the selected node has unsaved changes',
+     fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+       await component.updateModel();
+       component.model.expanded = true;
+       component.model.children[1].dirty = false;
+       fixture.detectChanges();
+       const renameButton = fixture.debugElement.query(By.css('#rename'));
+       const testNode = fixture.debugElement.query(
+         By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+
+       // when
+       // register for events of the node for an open editor file
+       testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+       // this event should be listened for because of the registeration
+       messageBus.publish(EDITOR_DIRTY_CHANGED, { path: component.model.children[1].id, dirty: true });
+       tick();
+       fixture.detectChanges();
+
+       // then
+       expect(renameButton.nativeElement.disabled).toBeFalsy();
+       expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
+     })));
 
   it('reactivates rename if file of the selected node had unsaved changes, but editor was closed',
-      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
-        // given
-        await component.updateModel();
-        component.model.expanded = true;
-        component.model.children[1].dirty = true;
-        fixture.detectChanges();
-        const renameButton = fixture.debugElement.query(By.css('#rename'));
-        const testNode = fixture.debugElement.query(
-          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+     fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+       // given
+       await component.updateModel();
+       component.model.expanded = true;
+       component.model.children[1].dirty = true;
+       fixture.detectChanges();
+       const renameButton = fixture.debugElement.query(By.css('#rename'));
+       const testNode = fixture.debugElement.query(
+         By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
 
-        // when
-        testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
-        messageBus.publish(EDITOR_CLOSE, { path: component.model.children[1].id });
-        tick();
-        fixture.detectChanges();
+       // when
+       testNode.triggerEventHandler('dblclick', new MouseEvent('dblclick'));
+       messageBus.publish(EDITOR_CLOSE, { path: component.model.children[1].id });
+       tick();
+       fixture.detectChanges();
 
-        // then
-        expect(renameButton.nativeElement.disabled).toBeFalsy();
-        expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
-      })));
+       // then
+       expect(renameButton.nativeElement.disabled).toBeFalsy();
+       expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
+     })));
 
   it('removes element whose delete button was clicked from the tree, after user confirmed and backend responds with success',
-    fakeAsync(async () => {
-    // given
-    await component.updateModel();
-    const elementBeingDeleted = component.model.children[1];
-    component.model.expanded = true;
-    fixture.detectChanges();
+     fakeAsync(async () => {
+       // given
+       await component.updateModel();
+       const elementBeingDeleted = component.model.children[1];
+       component.model.expanded = true;
+       fixture.detectChanges();
 
-    // when
-    clickDeleteAndConfirmOnFirstNode();
+       // when
+       clickDeleteAndConfirmOnFirstNode();
 
-    // then
-    expect(component.model.children.length).toEqual(2);
-    expect(component.model.children[1].name).not.toEqual(elementBeingDeleted.name);
-  }));
+       // then
+       expect(component.model.children.length).toEqual(2);
+       expect(component.model.children[1].name).not.toEqual(elementBeingDeleted.name);
+     }));
 
   it('retains element whose delete button was clicked from the tree, if user confirmed but backend responded with failure',
-    fakeAsync(async () => {
-    // given
-    when(mockPersistenceService.deleteResource(anyString())).thenReject(new Error('deletion unsuccessul'));
-    await component.updateModel();
-    const elementFailingToBeDeleted = component.model.children[1];
-    component.model.expanded = true;
-    fixture.detectChanges();
+     fakeAsync(async () => {
+       // given
+       when(mockPersistenceService.deleteResource(anyString())).thenReject(new Error('deletion unsuccessul'));
+       await component.updateModel();
+       const elementFailingToBeDeleted = component.model.children[1];
+       component.model.expanded = true;
+       fixture.detectChanges();
 
-    // when
-    clickDeleteAndConfirmOnFirstNode();
+       // when
+       clickDeleteAndConfirmOnFirstNode();
 
-    // then
-    expect(component.model.children.length).toEqual(3);
-    expect(component.model.children[1].name).toEqual(elementFailingToBeDeleted.name);
-    expect(fixture.debugElement.query(By.css('#errorMessage')).nativeElement.innerText).toEqual('Error while deleting element!');
-    flush();
-  }));
+       // then
+       expect(component.model.children.length).toEqual(3);
+       expect(component.model.children[1].name).toEqual(elementFailingToBeDeleted.name);
+       expect(fixture.debugElement.query(By.css('#errorMessage')).nativeElement.innerText).toEqual('Error while deleting element!');
+       flush();
+     }));
 
   it('retrieves and sets validation markers during initialization', fakeAsync( async () => {
     // given + when
@@ -562,7 +581,7 @@ describe('TestNavigatorComponent', () => {
   }));
 
   it('moves node to new subfolder and executes delete if pasting cutted nodes', fakeAsync(async () => {
-   // given
+    // given
     await component.updateModel();
     fixture.detectChanges();
     component.select(component.model.children[1]);
@@ -738,7 +757,7 @@ describe('TestNavigatorComponent', () => {
   });
 
   it('fails if the unique file cannot be created, because it is no valid file name', () => {
-     // given
+    // given
     when(mockFilenameValidator.isValidFileName('test{}.tcl')).thenReturn(false);
     const emptyTargetFolder = new TestNavigatorTreeNode({
       name: 'some',
@@ -853,18 +872,18 @@ describe('TestNavigatorComponent', () => {
   });
 
   it('emits WORKSPACE_MARKER_UPDATE event after the validation markers have been updated',
-    fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
-    // given
-    await component.updateModel();
-    let eventReceived = false;
-    messageBus.subscribe(WORKSPACE_MARKER_UPDATE, () => eventReceived = true);
+     fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+       // given
+       await component.updateModel();
+       let eventReceived = false;
+       messageBus.subscribe(WORKSPACE_MARKER_UPDATE, () => eventReceived = true);
 
-    // when
-    await component.updateValidationMarkers(component.model);
-    tick();
+       // when
+       await component.updateValidationMarkers(component.model);
+       tick();
 
-    // then
-    expect(eventReceived).toBeTruthy();
-  })));
+       // then
+       expect(eventReceived).toBeTruthy();
+     })));
 
 });
