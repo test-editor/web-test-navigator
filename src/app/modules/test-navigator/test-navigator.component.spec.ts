@@ -4,7 +4,7 @@ import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { IndicatorFieldSetup, TreeViewerModule, TREE_NODE_RENAME_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, verify, anyString, anything, spy } from 'ts-mockito/lib/ts-mockito';
+import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
 import { EDITOR_DIRTY_CHANGED, EDITOR_CLOSE } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
