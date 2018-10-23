@@ -3,8 +3,12 @@
 export const HTTP_CLIENT_SUPPLIED = 'httpClient.supplied';
 
 export const EDITOR_ACTIVE = 'editor.active';
+
+// payload = { path: string }
 export const EDITOR_CLOSE = 'editor.close';
 export const EDITOR_DIRTY_CHANGED = 'editor.dirtyStateChanged';
+
+// payload = { path: string }
 export const EDITOR_SAVE_COMPLETED = 'editor.save.completed';
 
 export const WORKSPACE_RELOAD_REQUEST = 'workspace.reload.request';

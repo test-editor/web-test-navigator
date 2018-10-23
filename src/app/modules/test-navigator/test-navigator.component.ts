@@ -4,7 +4,7 @@ import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig
          TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
        } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED  } from '../event-types-in';
+import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, EDITOR_CLOSE  } from '../event-types-in';
 import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
          WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED } from '../event-types-out';
 import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
@@ -201,12 +201,21 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private open(node: TestNavigatorTreeNode) {
     this.openFilesSubscriptions.remove(node);
     this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload) => {
-      if (node.id === payload.path) {
+      if ((node.id === payload.path) && (node.dirty !== payload.dirty)) {
+        this.log('received ' + EDITOR_DIRTY_CHANGED + ' for this node, that changes dirty flag', payload);
         node.dirty = payload.dirty;
+        this.changeDetector.detectChanges(); // necessary to trigger rename button updates
       }
     }));
-    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, () => {
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
       this.updateValidationMarkers(this.model);
+      // no need to update any dirty markers for renames, since EDITOR_DIRTY_CHANGED will be received, too
+    }));
+    this.openFilesSubscriptions.add(node, this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
+      if (node.id === payload.path) {
+        this.log('received ' + EDITOR_CLOSE + ' for this node', payload);
+        node.dirty = false; // no trigger necessary for updates (somehow) (see EDITOR_DIRTY_CHANGED subscription)
+      }
     }));
 
     this.messagingService.publish(NAVIGATION_OPEN, node);
@@ -325,7 +334,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       } else if (this.selectedNode === this.selectedNode.root) {
         result = 'cannot rename the root element';
       } else {
-        result = `rename "${this.selectedNode.name}`;
+        result = `rename "${this.selectedNode.name}"`;
       }
     }
     return result;
