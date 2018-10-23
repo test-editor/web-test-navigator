@@ -39,7 +39,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private nodeClipped: TestNavigatorTreeNode = null;
   private clippedBy: ClipType = null;
   private pasteRunning = false;
-  protected renameRunning = false; // visible for testing
+  private renameRunning = false;
 
   private fileSavedSubscription: Subscription;
   private treeSelectionChangeSubscription: Subscription;
@@ -261,12 +261,17 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         root: this.model.root,
         validateName: (newName: string) => this.validateName(newName, selectedNode.type),
         onConfirm: async (newName: string) => {
-          const pathElements = selectedNode.id.split('/');
-          const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
-          const requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
-          if (requestSuccessful) {
-            selectedNode.rename(newPath, newName);
-            this.updateValidationMarkers(this.model);
+          let requestSuccessful = false;
+          try {
+            const pathElements = selectedNode.id.split('/');
+            const newPath = pathElements.slice(0, pathElements.length - 1).join('/') + '/' + newName;
+            requestSuccessful = await this.sendRenameRequest(newPath, selectedNode.id);
+            if (requestSuccessful) {
+              selectedNode.rename(newPath, newName);
+              this.updateValidationMarkers(this.model);
+            }
+          } catch (error) {
+            this.log('error during onConfirm in rename request', error);
           }
           this.renameRunning = false;
           return requestSuccessful;

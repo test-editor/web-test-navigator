@@ -2,9 +2,9 @@ import { async, ComponentFixture, fakeAsync, flush, TestBed, tick, inject } from
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
-import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
+import { IndicatorFieldSetup, TreeViewerModule, TREE_NODE_RENAME_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
+import { instance, mock, when, verify, anyString, anything, spy } from 'ts-mockito/lib/ts-mockito';
 import { EDITOR_DIRTY_CHANGED, EDITOR_CLOSE } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
@@ -192,7 +192,7 @@ describe('TestNavigatorComponent', () => {
        expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
      })));
 
-  it('disables rename if a rename is currently running', async () => {
+  it('enables rename after rename finished', fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
     // given
     await component.updateModel();
     component.model.expanded = true;
@@ -200,16 +200,46 @@ describe('TestNavigatorComponent', () => {
     const renameButton = fixture.debugElement.query(By.css('#rename'));
     const testNode = fixture.debugElement.query(
       By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
-    testNode.nativeElement.click();
+    testNode.nativeElement.click(); // thus this node is selected
+    fixture.detectChanges();
+    when(mockPersistenceService.renameResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl'))
+      .thenThrow(new Error('some'));
+    spyOn(messageBus, 'publish').and.callFake((id, payload) => {
+        console.log(id); console.log(payload);
+      if (id === TREE_NODE_RENAME_SELECTED) {
+        payload.onConfirm('src/test/java/subfolder/test.tcl');
+      }
+    });
 
     // when
-    component.renameRunning = true;
+    component.renameElement();
+    tick();
+    testNode.nativeElement.click(); // thus this node is selected
+    fixture.detectChanges();
+
+    // then
+    expect(renameButton.nativeElement.disabled).toBeFalsy();
+    expect(renameButton.nativeElement['title']).toEqual('rename "src/test/java/subfolder/test.tcl"');
+  })));
+
+  it('disables rename if a rename is currently running', fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+    const renameButton = fixture.debugElement.query(By.css('#rename'));
+    const testNode = fixture.debugElement.query(
+      By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+    testNode.nativeElement.click(); // thus this node is selected
+
+    // when
+    component.renameElement();
     fixture.detectChanges();
 
     // then
     expect(renameButton.nativeElement.disabled).toBeTruthy();
     expect(renameButton.nativeElement['title']).toEqual('cannot rename until currently running rename finished');
-  });
+  })));
 
   it('keeps rename active even if the file of the selected node has unsaved changes',
      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
