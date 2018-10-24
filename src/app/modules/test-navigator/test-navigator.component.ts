@@ -260,6 +260,10 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       const payload: InputBoxConfig = {
         root: this.model.root,
         validateName: (newName: string) => this.validateName(newName, selectedNode.type),
+        onCancel: (): Promise<void> => {
+          this.renameRunning = false;
+          return Promise.resolve();
+        },
         onConfirm: async (newName: string) => {
           let requestSuccessful = false;
           try {
