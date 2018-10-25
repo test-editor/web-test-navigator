@@ -1,52 +1,50 @@
-dist: trusty
+language: nix
 sudo: false
-language: node_js
-node_js:
-- '9'
-os:
-- linux
-cache: yarn
+cache:
+  directories:
+  - "$HOME/nix.store"
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+before_install:
+- sudo mkdir -p /etc/nix
+# make sure no browser is left over that can disturb the karma tests (nix-shell provides the browsers!)
+- sudo apt-get remove google-chrome-stable -y
+- sudo apt-get remove chromium-browser -y
+- echo "substituters = https://cache.nixos.org/ file://$HOME/nix.store" | sudo tee -a /etc/nix/nix.conf > /dev/null
+- echo 'require-sigs = false' | sudo tee -a /etc/nix/nix.conf > /dev/null
+before_cache:
+- mkdir -p $HOME/nix.store
+- nix copy --to file://$HOME/nix.store -f default.nix buildInputs
 
 env:
   global:
-    - # Environment variables for NPM version patch for GitHub user 
+    - # Environment variables for NPM version patch for GitHub user
     - secure: "C1mGKsF71ALfMEwi/dUjuuTHqFqHVSy65rLtQN+CK4oSQo3K5YxFKIWboMPi2rAS3C5DaTSmAyOUKUb7iTUG6v43Hp3zeWSW3sNVEerlwOXPOMmBGkPbMIKkgjDkyw/AbogixqDCBnDoAZhCRQ8dAWrGf1qUHLexJE0NGEgjl2xVjnPJsexIKYQIRzUmPzlVkew2mfLxm5u1y2/i3Qu/sgIHcHV/zOPCmLLYd0JhKrMbUGq4ZO7zGIYNm/ixWWXI8uV9Fb8BGuVoBxP91vcx2nNh6IpZDtcx0ZUSwcio7hzVvOgmHLv+wnEzczJVj0PXDEeH4N0FcuP/pdT4kbmrfRWHgbva8HUAO8uVqYdjdBMWemzxVGWK36dM09crLbFo3lRC4XdWFOIoEGrrThld97bXZajqDyOBqHMLsFn/CzNO6NZErFWXGJ0dlpqvqczTytVWlSzcqbIn3DVVXM0vR6c/lB60JELKmkoPIMjpz11Z8qi3ddJG7BtPBRr21iVoOHlQ7lkr0sOSLDlSRQxNe+RbIrq75/FVN69KhqS7n/HnRJcDOiigNxmz8JGE4p80z+VlKrKnf61KOpFSltijnXGxT8G4xQ0mlsFiQTXg78e3yNtR06PodaATY0PHQ7j1WYE+VX+84dt5kcJTjBZI9OfxtCH4TjMm3w/d4Frc/qo="
     - secure: "jnX4d63Atw6zceYdLLJ+gX6MYo5Wrk/mqtbqrrPpmIQ3W3gobfk5y0IzI79+S5l/4AUtqYAx2nHwKv/s9P+zkN8mTYbH8PVlWmr6J2hB4lxK8vjUxR5yVl5qykeWcpU0Ek4OFR55hqHEMELiGrkefeY8ftGuB9XXXpgkvqB7rnH/aEHUKnBvfTECcUzWbn7aYVzpbnurPVez5E4Iug3QzHEkqLmyQn/kRhvzmUOYgC4BsvHNpUoruZCTtXRynoqSc4zlLcwI1T+lA0QnBW5UQUsWkWoPU9/Q9TRzbYBL2D3mI0LqzSUxK2XyfdeSqlSZKwZwM/ADkIwm3G1Q5pl12mymQJoFUOll002y2ldxc4JXjg0Fn6n38CuDFEDFrXD4SD93x8tDnhq1O3BOc63zOUmqQMoCUBlIWMEO7O+DcFMhLML7sKUmSzaqdG5rjfeX78qclBMru112ud//xkAqRrFMlOxKXsagC7ZH2nVlthNApOzV9FVzUwq5FVNVZWyG40+GJ4zgLn8hm3fVch6qwdT+DtEp1HLqNsP0u8v8ZMxI9ZX4MLnFTmwy99558AiO04iSj4Xsy+PJVbJpDQftEgYFqwqxI1K0CS9nd6bUPjE5MchZBBr9AdZTmPJtV5ndpD3FP7pugKEE46OrJC0Zm0A4CG01FjMSIHJITzP8tnA="
+    - NIXPKGS_ALLOW_UNFREE: 1
 
   matrix:
     - FIREFOX_VERSION="latest"
-    - FIREFOX_VERSION="59.0.2"
+    - FIREFOX_VERSION="60-esr"
 
-before_install:
-- echo $FIREFOX_VERSION
-- export FIREFOX_SOURCE_URL='https://download.mozilla.org/?product=firefox-'$FIREFOX_VERSION'&lang=en-US&os=linux64'
-- wget --no-verbose -O /tmp/firefox-$FIREFOX_VERSION.tar.bz2 $FIREFOX_SOURCE_URL
-- mkdir /tmp/firefox-$FIREFOX_VERSION
-- tar -xvf /tmp/firefox-$FIREFOX_VERSION.tar.bz2 -C /tmp/firefox-$FIREFOX_VERSION
-- export PATH=/tmp/firefox-$FIREFOX_VERSION/firefox:$PATH
-- export DISPLAY=:99.0
-- sh -e /etc/init.d/xvfb start
-- export CHROME_BIN=/usr/bin/google-chrome
-- curl -o- -L https://yarnpkg.com/install.sh | bash -s -- --version 1.9.4
-- export PATH="$HOME/.yarn/bin:$PATH"
-- sudo apt-get update
-- sudo apt-get install -y libappindicator1 fonts-liberation google-chrome-stable
 install:
-- yarn install
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "yarn install"
 script:
-- firefox --version
-- yarn run lint
-- yarn run test:once
-- yarn run e2e
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "firefox --version"
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "google-chrome --version"
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "yarn run lint"
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "xvfb-run --server-args=\"-ac -screen 0 1920x1080x16\" yarn run test:once"
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "xvfb-run --server-args=\"-ac -screen 0 1920x1080x16\" yarn run e2e"
+
 after_success:
-- yarn run packagr
+- nix-shell shell-${FIREFOX_VERSION}.nix --command "yarn run packagr"
 # Autoincrement of patch level version:
 # Tag the repo with a new patch level version tag, if this build is done on
 #     'FIREFOX_VERSION = latest' and (only one of the matrix-builds is relevant)
 #     this is not a pull request and (pull requests themselves should not autoincrement)
 #     this branch is the master branch and (only builds on master are relevant)
 #     there is no tag given (if a tag is alread given, this one will be published and should not again be tagged!)
-- 'if [ "$FIREFOX_VERSION" = "latest" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_TAG" = "" ]; then wget https://github.com/test-editor/commons-build-automation/raw/master/travis/deploy/tag_with_new_patch_version.sh; bash tag_with_new_patch_version.sh; fi'
+- 'if [ "$FIREFOX_VERSION" = "latest" -a "$TRAVIS_PULL_REQUEST" = "false" -a "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_TAG" = "" ]; then wget https://github.com/test-editor/commons-build-automation/raw/master/travis/deploy/tag_with_new_patch_version.sh; nix-shell shell-${FIREFOX_VERSION}.nix --command  "bash tag_with_new_patch_version.sh"; fi'
 before_deploy:
 - touch .npmignore
 - cd dist/
