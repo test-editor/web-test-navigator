@@ -192,6 +192,34 @@ describe('TestNavigatorComponent', () => {
        expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
      })));
 
+  it('enables rename button after rename was cancelled',
+     fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+       // given
+       await component.updateModel();
+       component.model.expanded = true;
+       fixture.detectChanges();
+       const renameButton = fixture.debugElement.query(By.css('#rename'));
+       const testNode = fixture.debugElement.query(
+         By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+       testNode.nativeElement.click(); // thus this node is selected
+       fixture.detectChanges();
+       spyOn(messageBus, 'publish').and.callFake(async (id: string, payload: InputBoxConfig) => {
+         if (id === TREE_NODE_RENAME_SELECTED) {
+           await payload.onCancel();
+         }
+       });
+
+       // when
+       component.renameElement();
+       tick();
+       testNode.nativeElement.click(); // thus this node is selected
+       fixture.detectChanges();
+
+       // then
+       expect(renameButton.nativeElement.disabled).toBeFalsy();
+       expect(renameButton.nativeElement['title']).toEqual('rename "test.tcl"');
+     })));
+
   it('enables rename after rename finished (even if unsuccessful)',
      fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
        // given
