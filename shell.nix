@@ -1,1 +1,1 @@
-/home/u134552/repo/web-test-navigator/shell-latest.nix
+shell-latest.nix
