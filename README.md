@@ -4,6 +4,16 @@ Top level navigation component for test editor projects
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.7.4.
 
+## Setup development
+
+Make sure to have a working [nix](https://nixos.org/nix/) installation. Please ensure that the `nixpkgs-unstable` channel is available. It
+can be added with `nix-channel --add https://nixos.org/channels/nixpkgs-unstable`.
+
+To enter the development environment, execute `NIXPKGS_ALLOW_UNFREE=1 nix-shell` in this repos root directory. For even more convenience,
+please install [direnv](https://github.com/direnv/direnv) which will enter the development environment automatically for you.
+
+Once within the development environment, run `yarn install` to resolve all necessary dependencies.
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
