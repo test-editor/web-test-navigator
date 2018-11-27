@@ -5,7 +5,7 @@ import { MessagingModule, MessagingService } from '@testeditor/messaging-service
 import { IndicatorFieldSetup, TreeViewerModule, TREE_NODE_RENAME_SELECTED, InputBoxConfig } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
-import { EDITOR_DIRTY_CHANGED, EDITOR_CLOSE } from '../event-types-in';
+import { EDITOR_DIRTY_CHANGED, EDITOR_CLOSE, USER_ACTIVITY_UPDATED, ElementActivity } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
 import { HttpProviderService } from '../http-provider-service/http-provider.service';
 import { IndexService } from '../index-service/index.service';
@@ -21,6 +21,9 @@ import { XtextDefaultValidationMarkerService } from '../validation-marker-servic
 import { XtextIndexService } from '../index-service/xtext-index.service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
+import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
+import { UserActivityLabelProvider, DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
+import { UserActivitySet } from './user-activity-set';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -54,11 +57,14 @@ describe('TestNavigatorComponent', () => {
       imports: [ TreeViewerModule, MessagingModule.forRoot(), FormsModule, ButtonsModule.forRoot() ],
       declarations: [ TestNavigatorComponent, FilterBarComponent ],
       providers: [ HttpProviderService, TreeFilterService,
-                   { provide: FilenameValidator, useValue: instance(mockFilenameValidator) },
-                   { provide: PersistenceService, useValue: instance(mockPersistenceService) },
-                   { provide: IndexService, useValue: instance(mockIndexService) },
-                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) },
-                   { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup } ]
+                  { provide: FilenameValidator, useValue: instance(mockFilenameValidator) },
+                  { provide: PersistenceService, useValue: instance(mockPersistenceService) },
+                  { provide: IndexService, useValue: instance(mockIndexService) },
+                  { provide: ValidationMarkerService, useValue: instance(mockValidationService) },
+                  { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup },
+                  { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
+                  { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
+                ]
     })
       .compileComponents();
   }));
@@ -943,5 +949,92 @@ describe('TestNavigatorComponent', () => {
        // then
        expect(eventReceived).toBeTruthy();
      })));
+
+  it('updates tree with collaborator activities on receiving USER_ACTIVITY_UPDATED',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    await component.updateModel();
+    const tclFile = component.model.children[1];
+    const collaboratorActivities: ElementActivity[] = [
+      {element: 'src/test/java/test.tcl', activities: [
+        { user: 'John Doe', type: 'openedFile'},
+        { user: 'John Doe', type: 'typesIntoFile'},
+        { user: 'Jane Doe', type: 'openedFile'}]
+      }, {element: 'src/test/java', activities: [
+        {user: 'Jane Doe', type: 'deletedElement'}]
+      }];
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
+    tick();
+    fixture.detectChanges();
+
+    // then
+    expect(component.model.activities.hasOnly('deletedElement')).toBeTruthy();
+    expect(component.model.activities.getUsers('deletedElement').length).toEqual(1);
+    expect(component.model.activities.getUsers('deletedElement')).toContain('Jane Doe');
+    expect(tclFile.activities.getTypes().length).toEqual(2);
+    expect(tclFile.activities.getTypes()).toContain('openedFile');
+    expect(tclFile.activities.getTypes()).toContain('typesIntoFile');
+    expect(tclFile.activities.getUsers('openedFile').length).toEqual(2);
+    expect(tclFile.activities.getUsers('openedFile')).toContain('John Doe');
+    expect(tclFile.activities.getUsers('openedFile')).toContain('Jane Doe');
+    expect(tclFile.activities.getUsers('typesIntoFile').length).toEqual(1);
+    expect(tclFile.activities.getUsers('typesIntoFile')).toContain('John Doe');
+  })));
+
+  it('shows icons and tooltip to indicate collaborator activities on receiving USER_ACTIVITY_UPDATED',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    await component.updateModel();
+    const collaboratorActivities: ElementActivity[] = [
+      {element: 'src/test/java/test.tcl', activities: [
+        { user: 'John Doe', type: 'executedTest'},
+        { user: 'Jane Doe', type: 'executedTest'}]
+      }];
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
+    tick();
+    fixture.detectChanges();
+
+    // then
+    const testTclUserActivityIcon = fixture.debugElement.query(By.css(
+      'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa');
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa-cog');
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('user-activity');
+    expect(testTclUserActivityIcon.nativeElement.title).toEqual('John Doe and Jane Doe are executing this test');
+  })));
+
+  it('removes user activity icon when received USER_ACTIVITY_UPDATED event does not include that activity anymore',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    await component.updateModel();
+    const tclFile = component.model.children[1];
+    tclFile.activities = new UserActivitySet([{ user: 'John Doe', type: 'executedTest'}]);
+    fixture.detectChanges();
+    let testTclUserActivityIcon = fixture.debugElement.query(By.css(
+      'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa');
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa-cog');
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('user-activity');
+    expect(testTclUserActivityIcon.nativeElement.title).toEqual('John Doe is executing this test');
+
+    const changedActivities: ElementActivity[] = [
+      {element: 'src/test/java', activities: [
+        { user: 'Jane Doe', type: 'some activity on other element'}]
+      }];
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, changedActivities);
+    tick();
+    fixture.detectChanges();
+
+    // then
+    testTclUserActivityIcon = fixture.debugElement.query(By.css(
+      'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));
+      expect(testTclUserActivityIcon.nativeElement.classList).not.toContain('fa');
+      expect(testTclUserActivityIcon.nativeElement.classList).not.toContain('fa-cog');
+      expect(testTclUserActivityIcon.nativeElement.classList).not.toContain('user-activity');
+      expect(testTclUserActivityIcon.nativeElement.title).toBeFalsy();
+  })));
 
 });

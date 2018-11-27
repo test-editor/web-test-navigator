@@ -1,7 +1,7 @@
 import { async, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MessagingModule } from '@testeditor/messaging-service';
-import { TreeViewerModule, IndicatorFieldSetup } from '@testeditor/testeditor-commons';
+import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { AppComponent } from './app.component';
 import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
@@ -11,13 +11,15 @@ import { IndexServiceConfig } from './modules/index-service/index.service.config
 import { XtextIndexService } from './modules/index-service/xtext-index.service';
 import { PersistenceService } from './modules/persistence-service/persistence.service';
 import { PersistenceServiceConfig } from './modules/persistence-service/persistence.service.config';
+import { StyleProvider, TestNavigatorDefaultStyleProvider } from './modules/style-provider/style-provider';
+import { DefaultUserActivityLabelProvider, UserActivityLabelProvider } from './modules/style-provider/user-activity-label-provider';
 import { FilenameValidator } from './modules/test-navigator/filename-validator';
+import { TestNavigatorFieldSetup } from './modules/test-navigator/test-navigator-field-setup';
 import { TestNavigatorComponent } from './modules/test-navigator/test-navigator.component';
 import { TreeFilterService } from './modules/tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
 import { ValidationMarkerServiceConfig } from './modules/validation-marker-service/validation-marker.service.config';
 import { XtextDefaultValidationMarkerService } from './modules/validation-marker-service/xtext-default-validation-marker.service';
-import { TestNavigatorFieldSetup } from './modules/test-navigator/test-navigator-field-setup';
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
@@ -44,7 +46,9 @@ describe('AppComponent', () => {
         { provide: PersistenceServiceConfig, useValue: persistenceServiceConfig },
         { provide: IndexServiceConfig, useValue: indexServiceConfig  },
         { provide: ValidationMarkerServiceConfig, useValue: validationServiceConfig },
-        { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup }
+        { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup },
+        { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
+        { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
       ]
     }).compileComponents();
   }));

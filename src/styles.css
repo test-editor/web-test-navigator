@@ -9,3 +9,16 @@
 .validation-errors { color: #d82300 }
 .validation-warnings { color: #ffcc00 }
 .validation-infos { color: #3498DB }
+
+.user-activity {
+  animation: user-activity-pulse 2s ease-out;
+  animation-iteration-count: infinite;
+  opacity: 1;
+  color: whitesmoke;
+}
+
+@keyframes user-activity-pulse {
+  0% {color: whitesmoke; opacity: 0.75;}
+  50% {color: white; opacity: 1; }
+  100% {color: whitesmoke; opacity: 0.75;}
+}

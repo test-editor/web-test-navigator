@@ -18,11 +18,6 @@ import { XtextDefaultValidationMarkerService } from '../validation-marker-servic
 import { FilenameValidator } from './filename-validator';
 import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
-
-const fieldSetup = new TestNavigatorFieldSetup();
-export function getFieldSetup() {
-  return fieldSetup;
-}
 @NgModule({
   imports: [
     CommonModule, TreeViewerModule, FormsModule, ButtonsModule.forRoot(), MessagingModule.forRoot()
@@ -51,7 +46,8 @@ export class TestNavigatorModule {
         { provide: PersistenceServiceConfig, useValue: persistenceConfig },
         { provide: IndexServiceConfig, useValue: indexConfig },
         { provide: ValidationMarkerServiceConfig, useValue: validationConfig },
-        { provide: IndicatorFieldSetup, useFactory: getFieldSetup } ]
+        { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup }
+      ]
     };
   }
 }
