@@ -5,6 +5,9 @@ import 'rxjs/add/operator/toPromise';
 import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType, WorkspaceElement } from './workspace-element';
+import { Subscription } from 'rxjs/Subscription';
+import { NAVIGATION_OPEN, NAVIGATION_RENAMED, EDITOR_RELOAD, NavigationRenamedPayload } from '../event-types-out';
+import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
 
 
 export const HTTP_STATUS_NO_CONTENT = 204;
@@ -19,13 +22,96 @@ export abstract class AbstractPersistenceService {
   abstract getBinaryResource(path: string): Promise<Blob>;
 }
 
+export interface OriginalWithBackup {
+  openTab: string;
+  backupFile: string;
+}
+
+export interface PullResponse {
+  changedOpenTabs: Array<string>;
+  changedOpenDirtyTabs: Array<OriginalWithBackup>;
+}
+
 @Injectable()
-export class PersistenceService extends AbstractPersistenceService {
+export class PersistenceService extends AbstractPersistenceService implements OnInit, OnDestroy {
 
   private serviceUrl: string;
   private listFilesUrl: string;
+  private openNonDirtyTabs: string[];
+  private openDirtyTabs: string[];
+  private subscriptions: Subscription[];
 
-  constructor(config: PersistenceServiceConfig, private httpProvider: HttpProviderService) {
+  ngOnInit(): void {
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (id) => {
+      this.openNonDirtyTabs.push(id);
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
+      this.openNonDirtyTabs = new Array();
+      this.openDirtyTabs = new Array();
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_RENAMED, (payload) => {
+      if (this.removeNonDirtyTab(payload.oldPath)) {
+        this.openNonDirtyTabs.push(payload.newPath);
+      } else if (this.removeDirtyTab(payload.oldPath)) {
+        this.openDirtyTabs.push(payload.newPath);
+      } else {
+        console.log('WARNING: received ' + NAVIGATION_RENAMED
+                    + ' but no corresponding open tab is known within persistence service backend');
+        console.log(payload);
+      }
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
+      if (!this.removeNonDirtyTab(payload.id) || !this.removeDirtyTab(payload.id)) {
+        console.log('WARNING: received ' + EDITOR_CLOSE
+                    + ' but no corresponding open tab is known within persistence service backend');
+        console.log(payload);
+      }
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload: EditorDirtyChangedPayload) => {
+      this.removeNonDirtyTab(payload.path);
+      this.removeDirtyTab(payload.path);
+      if (payload.dirty) {
+        this.openDirtyTabs.push(payload.path);
+      } else {
+        this.openNonDirtyTabs.push(payload.path);
+      }
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
+      if (this.removeDirtyTab(payload.id)) {
+          this.openNonDirtyTabs.push(payload.id);
+      } else {
+        console.log('WARNING: received ' + EDITOR_SAVE_COMPLETED
+                    + ' but no corresponding open dirty tab is known within persistence service backend');
+        console.log(payload);
+      }
+    }));
+  }
+
+  private removeDirtyTab(path: string): boolean {
+    const dirtyTab = this.openDirtyTabs.indexOf(path);
+    if (dirtyTab >= 0) {
+      this.openDirtyTabs = this.openDirtyTabs.splice(dirtyTab);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  private removeNonDirtyTab(path: string): boolean {
+    const nonDirtyTab = this.openNonDirtyTabs.indexOf(path);
+    if (nonDirtyTab >= 0) {
+      this.openNonDirtyTabs = this.openNonDirtyTabs.splice(nonDirtyTab);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((it) => it.unsubscribe());
+  }
+
+  constructor(config: PersistenceServiceConfig, private httpProvider: HttpProviderService, private messagingService: MessagingService) {
     super();
     this.serviceUrl = config.persistenceServiceUrl;
     this.listFilesUrl = `${config.persistenceServiceUrl}/workspace/list-files`;
@@ -75,6 +161,46 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
+  private async synchroniseWithRemote(): Promise<string[]> {
+    const pullResult = await this.executePull();
+    return this.handleChangesInPull(pullResult);
+  }
+
+  private handleChangesInPull(pullResult: PullResponse): string[] {
+    const resultingMessages: string[] = new Array();
+    pullResult.changedOpenTabs.forEach((openTab) => {
+      if (this.openNonDirtyTabs.indexOf(openTab) >= 0) {
+        this.messagingService.publish(EDITOR_RELOAD, openTab);
+        resultingMessages.push('"' + openTab + '" reloaded.');
+      } else {
+        console.log('WARNING: pull reported tab change in pull which is unknown ' + openTab);
+      }
+    });
+    pullResult.changedOpenDirtyTabs.forEach((originalWithBackup) => {
+      if (this.openDirtyTabs.indexOf(originalWithBackup.openTab) >= 0) {
+        // send editor that the tab with path: openTab has been renamed to originalWithBackup.backupFile
+        const payload: NavigationRenamedPayload = { newPath: originalWithBackup.backupFile, oldPath: originalWithBackup.openTab };
+        this.messagingService.publish(NAVIGATION_RENAMED, payload);
+        resultingMessages.push('"' + originalWithBackup.openTab + '" was backed up to "' + originalWithBackup.backupFile + '"');
+      } else {
+        console.log('WARNING: pull reported dirty tab change in pull which is unknown ' + originalWithBackup.openTab);
+      }
+    });
+    return resultingMessages;
+  }
+
+  private async executePull(): Promise<PullResponse> {
+    const client = await this.httpProvider.getHttpClient();
+    try {
+      return (await client.post(this.getPullURL(), '',
+                                { observe: 'response', responseType: 'json',
+                                  params: { openDirtyTabs: this.openNonDirtyTabs,
+                                            openNonDirtyTabs: this.openNonDirtyTabs}}).toPromise()).body as PullResponse;
+    } catch (errorResponse) {
+      // TODO: pull must always work, otherwise the local workspace is in deep trouble
+    }
+  }
+
   async getBinaryResource(path: string): Promise<Blob> {
     const client = await this.httpProvider.getHttpClient();
     return await client.get(this.getURL(path), { responseType: 'blob' }).toPromise();
@@ -86,6 +212,10 @@ export class PersistenceService extends AbstractPersistenceService {
 
   private getCopyURL(path: string, sourcePath: string): string {
     return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath);
+  }
+
+  private getPullURL(): string {
+    return `${this.serviceUrl}/pull`;
   }
 
   private getURL(path: string): string {

@@ -8,6 +8,11 @@ export const EDITOR_ACTIVE = 'editor.active';
 export const EDITOR_CLOSE = 'editor.close';
 export const EDITOR_DIRTY_CHANGED = 'editor.dirtyStateChanged';
 
+export interface EditorDirtyChangedPayload {
+  path: string;
+  dirty: boolean;
+}
+
 // payload = { path: string }
 export const EDITOR_SAVE_COMPLETED = 'editor.save.completed';
 
@@ -30,3 +35,5 @@ export interface ElementActivity {
   activities: UserActivityData[];
 }
 export const USER_ACTIVITY_UPDATED = 'user.activity.updated';
+
+export const NAVIGATION_CLOSE = 'navigation.close';
