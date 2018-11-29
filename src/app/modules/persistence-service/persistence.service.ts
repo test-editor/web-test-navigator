@@ -23,13 +23,14 @@ export abstract class AbstractPersistenceService {
 }
 
 export interface OriginalWithBackup {
-  openTab: string;
-  backupFile: string;
+  resource: string;
+  backupResource: string;
 }
 
 export interface PullResponse {
-  changedOpenTabs: Array<string>;
-  changedOpenDirtyTabs: Array<OriginalWithBackup>;
+  headCommit: string;
+  changedResources: Array<string>;
+  backedUpResources: Array<OriginalWithBackup>;
 }
 
 @Injectable()
@@ -168,7 +169,7 @@ export class PersistenceService extends AbstractPersistenceService implements On
 
   private handleChangesInPull(pullResult: PullResponse): string[] {
     const resultingMessages: string[] = new Array();
-    pullResult.changedOpenTabs.forEach((openTab) => {
+    pullResult.changedResources.forEach((openTab) => {
       if (this.openNonDirtyTabs.indexOf(openTab) >= 0) {
         this.messagingService.publish(EDITOR_RELOAD, openTab);
         resultingMessages.push('"' + openTab + '" reloaded.');
@@ -176,14 +177,14 @@ export class PersistenceService extends AbstractPersistenceService implements On
         console.log('WARNING: pull reported tab change in pull which is unknown ' + openTab);
       }
     });
-    pullResult.changedOpenDirtyTabs.forEach((originalWithBackup) => {
-      if (this.openDirtyTabs.indexOf(originalWithBackup.openTab) >= 0) {
+    pullResult.backedUpResources.forEach((originalWithBackup) => {
+      if (this.openDirtyTabs.indexOf(originalWithBackup.resource) >= 0) {
         // send editor that the tab with path: openTab has been renamed to originalWithBackup.backupFile
-        const payload: NavigationRenamedPayload = { newPath: originalWithBackup.backupFile, oldPath: originalWithBackup.openTab };
+        const payload: NavigationRenamedPayload = { newPath: originalWithBackup.backupResource, oldPath: originalWithBackup.resource };
         this.messagingService.publish(NAVIGATION_RENAMED, payload);
-        resultingMessages.push('"' + originalWithBackup.openTab + '" was backed up to "' + originalWithBackup.backupFile + '"');
+        resultingMessages.push('"' + originalWithBackup.resource + '" was backed up to "' + originalWithBackup.backupResource + '"');
       } else {
-        console.log('WARNING: pull reported dirty tab change in pull which is unknown ' + originalWithBackup.openTab);
+        console.log('WARNING: pull reported dirty tab change in pull which is unknown ' + originalWithBackup.resource);
       }
     });
     return resultingMessages;
@@ -194,8 +195,8 @@ export class PersistenceService extends AbstractPersistenceService implements On
     try {
       return (await client.post(this.getPullURL(), '',
                                 { observe: 'response', responseType: 'json',
-                                  params: { openDirtyTabs: this.openNonDirtyTabs,
-                                            openNonDirtyTabs: this.openNonDirtyTabs}}).toPromise()).body as PullResponse;
+                                  params: { resources: this.openNonDirtyTabs,
+                                            dirtyResources: this.openDirtyTabs}}).toPromise()).body as PullResponse;
     } catch (errorResponse) {
       // TODO: pull must always work, otherwise the local workspace is in deep trouble
     }
@@ -215,7 +216,7 @@ export class PersistenceService extends AbstractPersistenceService implements On
   }
 
   private getPullURL(): string {
-    return `${this.serviceUrl}/pull`;
+    return `${this.serviceUrl}/workspace/pull`;
   }
 
   private getURL(path: string): string {
