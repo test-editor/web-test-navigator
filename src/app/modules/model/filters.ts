@@ -13,6 +13,10 @@ const tmlFileRegex = /.+\.tml$/i;
 const amlFileRegex = /.+\.aml$/i;
 const jsonFileRegex = /.+\.json$/i;
 
+export function validExtensions(): string[] {
+  return ['tsl', 'tcl', 'config', 'tfr', 'tml', 'aml', 'json'];
+}
+
 export const testNavigatorFilter = (node: TreeNode) =>
   (node as TestNavigatorTreeNode).type === ElementType.Folder || isTestEditorFile(node.id);
 
@@ -23,7 +27,7 @@ export function filterFor(state: FilterState, node: {type: ElementType, id: stri
   return node.type === ElementType.Folder || (
     ( !(state.tsl || state.tcl || state.aml) && isTestEditorFile(node.id)) ) || (
       ( state.tsl && isTslFile(node.id) ) ||
-        ( state.tcl && (isTclFile(node.id) || isConfigFile(node.id) || isTmlFile(node.id)) ) ||
+        ( state.tcl && (isTclFile(node.id) || isConfigFile(node.id) || isTmlFile(node.id) || isJsonFile(node.id)) ) ||
         ( state.aml && isAmlFile(node.id) )
     );
 }
