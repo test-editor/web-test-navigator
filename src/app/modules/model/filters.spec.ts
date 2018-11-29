@@ -1,7 +1,7 @@
 import { FilterState } from '../filter-bar/filter-bar.component';
 import { TestNavigatorTreeNode} from './test-navigator-tree-node';
 import { ElementType } from '../persistence-service/workspace-element';
-import { filterFor } from './filters';
+import { filterFor, validExtensions, isTestEditorFile } from './filters';
 
 describe('filterFor', () => {
 
@@ -24,7 +24,7 @@ describe('filterFor', () => {
   });
 
   [[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 1], [0, 1, 1, 1], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 0, 1], [1, 1, 1, 1]].forEach((state) => {
-    ['tcl', 'tml', 'config'].forEach((extension) => {
+    ['tcl', 'tml', 'config', 'tfr', 'json'].forEach((extension) => {
       it(`${extension} files are ${state[3] ? 'shown' : 'hidden'} for filter state [${state.slice(0, 3)}]`, () => {
         // given
         const filterState: FilterState = { tsl: !!state[0], tcl: !!state[1], aml: !!state[2] };
@@ -80,4 +80,18 @@ describe('filterFor', () => {
       expect(visible).toBeFalsy();
     });
   });
+
+  validExtensions().forEach((extension) => {
+      it(`extension ${extension} is a valid extensions`, () => {
+        // given
+        const filename = 'AValidFileName.' + extension;
+
+        // when
+        const valid = isTestEditorFile(filename);
+
+        // then
+        expect(valid).toBeTruthy();
+      });
+    });
+
 });

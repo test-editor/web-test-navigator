@@ -9,7 +9,7 @@ import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DEL
          WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED } from '../event-types-out';
 import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
-import { filterFor, testNavigatorFilter, isFileOfType } from '../model/filters';
+import { filterFor, testNavigatorFilter, isFileOfType, validExtensions } from '../model/filters';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { isConflict, Conflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
@@ -291,7 +291,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       result = { valid: false, message: this.filenameValidator.getMessage(newName) };
     }
     if (!filterFor(this.filterState, { type: type, id: newName })) {
-      result = { valid: false, message: 'invalid (or currently filtered) file extension' };
+      result = { valid: false, message: 'invalid (or currently filtered) file extension (valid extensions:'
+                 + validExtensions().join(', ') + ')' };
     }
     return result;
   }
