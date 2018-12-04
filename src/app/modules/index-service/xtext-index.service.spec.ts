@@ -1,11 +1,11 @@
-import { TestBed, inject, fakeAsync, tick } from '@angular/core/testing';
-import { IndexServiceConfig } from './index.service.config';
-import { XtextIndexService } from './xtext-index.service';
-import { IndexService, IndexDelta } from './index.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
-import { MessagingService, MessagingModule } from '@testeditor/messaging-service';
+import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing';
+import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
+import { IndexDelta, IndexService } from './index.service';
+import { IndexServiceConfig } from './index.service.config';
+import { XtextIndexService } from './xtext-index.service';
 
 describe('XtextIndexService', () => {
 

@@ -1,13 +1,11 @@
-import { PersistenceServiceConfig } from './persistence.service.config';
-import { PersistenceService } from './persistence.service';
-import { HttpClientModule, HttpClient } from '@angular/common/http';
-import { HttpTestingController, HttpClientTestingModule } from '@angular/common/http/testing';
-import { inject, tick } from '@angular/core/testing';
-import { TestBed } from '@angular/core/testing';
-import { fakeAsync } from '@angular/core/testing';
-import { MessagingService, MessagingModule } from '@testeditor/messaging-service';
+import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing';
+import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { Conflict } from './conflict';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { PersistenceService } from './persistence.service';
+import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType } from './workspace-element';
 
 describe('PersistenceService', () => {

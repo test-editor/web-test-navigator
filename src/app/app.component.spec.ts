@@ -1,11 +1,10 @@
 import { async, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { MessagingModule } from '@testeditor/messaging-service';
-import { IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
+import { HttpProviderService, IndicatorFieldSetup, TreeViewerModule } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { AppComponent } from './app.component';
 import { FilterBarComponent } from './modules/filter-bar/filter-bar.component';
-import { HttpProviderService } from './modules/http-provider-service/http-provider.service';
 import { IndexService } from './modules/index-service/index.service';
 import { IndexServiceConfig } from './modules/index-service/index.service.config';
 import { XtextIndexService } from './modules/index-service/xtext-index.service';
