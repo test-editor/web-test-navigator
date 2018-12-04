@@ -9,7 +9,7 @@ import { UserActivityLabelProvider } from '../style-provider/user-activity-label
 export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
   constructor(private userActivityStyles: StyleProvider, private userActivityLabeler: UserActivityLabelProvider) {}
 
-  private static readonly validationMarkerSetup = {
+  private readonly validationMarkerSetup = {
     condition: (node: TestNavigatorTreeNode) => node && (node.type === ElementType.File || !node.expanded),
     states: [{
       condition: (node: TestNavigatorTreeNode) => node.validation.errors > 0,
@@ -36,6 +36,6 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
       }]
     };
 
-  fields = [TestNavigatorFieldSetup.validationMarkerSetup, this.activityMarkerSetup];
+  fields = [this.validationMarkerSetup, this.activityMarkerSetup];
 
 }
