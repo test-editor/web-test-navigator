@@ -6,8 +6,7 @@ import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType, WorkspaceElement } from './workspace-element';
 import { Subscription } from 'rxjs/Subscription';
-import { NAVIGATION_OPEN, NAVIGATION_RENAMED, EDITOR_RELOAD, NavigationRenamedPayload,
-         FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';
+import { NAVIGATION_OPEN, NAVIGATION_RENAMED, FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
 import { FILES_BACKEDUP } from '../event-types';
 import { MessagingService } from '@testeditor/messaging-service';
@@ -234,34 +233,6 @@ export class PersistenceService extends AbstractPersistenceService {
                                   (await client.post(this.getURL(path), '',
                                                      { observe: 'response', responseType: 'text', params: { type: type } })
                                    .toPromise()).body);
-  }
-
-  private async synchroniseWithRemote(): Promise<string[]> {
-    const pullResult = await this.executePull();
-    return this.handleChangesInPull(pullResult);
-  }
-
-  private handleChangesInPull(pullResult: PullResponse): string[] {
-    const resultingMessages: string[] = new Array();
-    pullResult.changedResources.forEach((openTab) => {
-      if (this.openNonDirtyTabs.indexOf(openTab) >= 0) {
-        this.messagingService.publish(EDITOR_RELOAD, openTab);
-        resultingMessages.push('"' + openTab + '" reloaded.');
-      } else {
-        console.log('WARNING: pull reported tab change in pull which is unknown ' + openTab);
-      }
-    });
-    pullResult.backedUpResources.forEach((originalWithBackup) => {
-      if (this.openDirtyTabs.indexOf(originalWithBackup.resource) >= 0) {
-        // send editor that the tab with path: openTab has been renamed to originalWithBackup.backupFile
-        const payload: NavigationRenamedPayload = { newPath: originalWithBackup.backupResource, oldPath: originalWithBackup.resource };
-        this.messagingService.publish(NAVIGATION_RENAMED, payload);
-        resultingMessages.push('"' + originalWithBackup.resource + '" was backed up to "' + originalWithBackup.backupResource + '"');
-      } else {
-        console.log('WARNING: pull reported dirty tab change in pull which is unknown ' + originalWithBackup.resource);
-      }
-    });
-    return resultingMessages;
   }
 
   private async executePull(httpClient?: HttpClient): Promise<PullResponse> {

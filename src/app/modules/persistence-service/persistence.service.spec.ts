@@ -57,11 +57,9 @@ describe('PersistenceService', () => {
       const tclFilePath = 'path/to/file?.tcl';
       const tclFileTarget = 'newpath/to/file?.tcl';
       let changedFiles: string[];
-      let backedUpFiles: BackupEntry[];
 
       // when
       messagingService.subscribe('files.changed', (files) => { changedFiles = files; });
-      messagingService.subscribe('files.backedup', (files) => { backedUpFiles = files; });
       persistenceService.copyResource(tclFileTarget, tclFilePath)
 
       // then
