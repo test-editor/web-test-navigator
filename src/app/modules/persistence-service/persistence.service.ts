@@ -156,6 +156,7 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
+  /** is the given a conflict (returned by any backend action) that indicates a repull? */
   private isRepullConflict(response: any): boolean {
     if (this.isHttpErrorResponse(response)) {
       if (response.status === HTTP_STATUS_CONFLICT) {
@@ -167,33 +168,36 @@ export class PersistenceService extends AbstractPersistenceService {
     return false;
   }
 
-  /** copy either a file to its new location (new location is the new filename),
-      or copy whole directories (newPath is the path to the new directory to be created) */
-  async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
+  /** wrap the given async funnction in a pull loop that will pull as long as the backend requests pulls
+      before the backend actually executes the expected function */
+  private async wrapActionInPulls(action: (client: HttpClient) => Promise<string | Conflict>): Promise<string | Conflict> {
     const client = await this.httpProvider.getHttpClient();
-    let result: string;
-    let executePull = true;
+    let result: string | Conflict;
+    let executePullAgain = true;
     let changedResources = new Array<string>();
     let  backedUpResources = new Array<BackupEntry>();
-    while (executePull) {
-      executePull = false;
+    while (executePullAgain) {
+      executePullAgain = false;
       const pullResponse = await this.executePull(client);
       if (!pullResponse.failure) {
         changedResources = changedResources.concat(pullResponse.changedResources);
         backedUpResources = backedUpResources.concat(pullResponse.backedUpResources);
         try {
-          result = (await client.post(this.getCopyURL(newPath, sourcePath), '', { observe: 'response', responseType: 'text'})
-                    .toPromise()).body;
+          result = await action(client);
         } catch (errorResponse) {
+          console.log('WARNING: got error on copy');
+          console.log(errorResponse);
           if (this.isRepullConflict(errorResponse)) {
-            executePull = true;
+            console.log('info: execute pull again');
+            executePullAgain = true;
           } else {
             this.informPullChanges(changedResources, backedUpResources);
             return this.getConflictOrThrowError(errorResponse);
           }
         }
       } else {
-        // TODO this is incomplete
+        console.error('unexpected error during pull');
+        console.log(pullResponse);
         this.informPullChanges(changedResources, backedUpResources);
         throw new Error('pull failure');
       }
@@ -202,32 +206,33 @@ export class PersistenceService extends AbstractPersistenceService {
     return result;
   }
 
+  /** copy either a file to its new location (new location is the new filename),
+      or copy whole directories (newPath is the path to the new directory to be created) */
+  async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
+    return this.wrapActionInPulls(async (client) =>
+                                  (await client.post(this.getCopyURL(newPath, sourcePath), '',
+                                                     { observe: 'response', responseType: 'text'})
+                                   .toPromise()).body);
+  }
+
   async renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.put(this.getRenameURL(oldPath), newPath, { observe: 'response', responseType: 'text'}).toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
-    }
+    return this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.put(this.getRenameURL(oldPath), newPath,
+                                                    { observe: 'response', responseType: 'text'})
+                                   .toPromise()).body);
   }
 
   async deleteResource(path: string): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.delete(this.getURL(path), { observe: 'response', responseType: 'text'}).toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
-    }
+    return this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.delete(this.getURL(path), { observe: 'response', responseType: 'text'})
+                                   .toPromise()).body);
   }
 
   async createResource(path: string, type: ElementType): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.post(this.getURL(path), '', { observe: 'response', responseType: 'text', params: { type: type } })
-        .toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
-    }
+    return this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.post(this.getURL(path), '',
+                                                     { observe: 'response', responseType: 'text', params: { type: type } })
+                                   .toPromise()).body);
   }
 
   private async synchroniseWithRemote(): Promise<string[]> {

@@ -12,6 +12,8 @@ describe('PersistenceService', () => {
   let serviceConfig: PersistenceServiceConfig;
   let messagingService: MessagingService;
   let httpClient: HttpClient;
+  let pullMatcher: any;
+  let copyMatcher: any;
 
   beforeEach(() => {
     serviceConfig = new PersistenceServiceConfig();
@@ -38,9 +40,57 @@ describe('PersistenceService', () => {
       subscription.unsubscribe();
       messagingService.publish('httpClient.supplied', { httpClient: httpClient });
     });
-  });
 
-  fit('copies a resource regularly if backend reports no conflict nor error', fakeAsync(inject([HttpTestingController, PersistenceService],
+    pullMatcher = {
+      method: 'POST',
+      url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
+    };
+    copyMatcher = {
+      method: 'POST',
+      url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
+    };
+ });
+
+  it('does multiple pulls if REPULL is requested by backend',  fakeAsync(inject([HttpTestingController, PersistenceService],
+    (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
+      // given
+      const tclFilePath = 'path/to/file?.tcl';
+      const tclFileTarget = 'newpath/to/file?.tcl';
+      let changedFiles: string[];
+      let backedUpFiles: BackupEntry[];
+
+      // when
+      messagingService.subscribe('files.changed', (files) => { changedFiles = files; });
+      messagingService.subscribe('files.backedup', (files) => { backedUpFiles = files; });
+      persistenceService.copyResource(tclFileTarget, tclFilePath)
+
+      // then
+      .then((response) => expect(response).toBe(tclFileTarget));
+      tick();
+
+      httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
+        changedResources: [ 'fileA' ],
+        backedUpResources: []
+      });
+      tick();
+
+      httpMock.match(copyMatcher)[0].flush('REPULL', {status: 409, statusText: 'Conflict'});
+      tick();
+
+      httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
+        changedResources: [ 'fileB' ],
+        backedUpResources: []
+      });
+      tick();
+
+      httpMock.match(copyMatcher)[0].flush(tclFileTarget);
+      tick();
+
+      expect(changedFiles).toContain('fileA'); // first pull reports this one
+      expect(changedFiles).toContain('fileB'); // second pull reports this one
+    })));
+
+  it('copies a resource regularly if backend reports no conflict nor error', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
       const tclFilePath = 'path/to/file?.tcl';
@@ -50,28 +100,19 @@ describe('PersistenceService', () => {
       persistenceService.copyResource(tclFileTarget, tclFilePath)
 
       // then
-        .then((response) => expect(response).toBe(tclFileTarget));
+      .then((response) => expect(response).toBe(tclFileTarget));
       tick();
 
-      httpMock.match({
-        method: 'POST',
-        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
-      })[0].flush({
-        failure: false,
-        diffExists: false,
-        headCommit: 'abcdef',
+      httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
         changedResources: [],
         backedUpResources: []
       });
       tick();
 
-      httpMock.match({
-        method: 'POST'
-        , url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
-      })[0].flush(tclFileTarget);
+      httpMock.match(copyMatcher)[0].flush(tclFileTarget);
   })));
 
-  fit('expect messages about changes when copying and pull reports changes', fakeAsync(inject([HttpTestingController, PersistenceService],
+  it('expect messages about changes when copying and pull reports changes', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
 
       // given
@@ -86,25 +127,16 @@ describe('PersistenceService', () => {
       persistenceService.copyResource(tclFileTarget, tclFilePath)
 
        // then
-        .then((response) => expect(response).toBe(tclFileTarget));
+      .then((response) => expect(response).toBe(tclFileTarget));
       tick();
 
-     httpMock.match({
-       method: 'POST',
-       url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
-      })[0].flush({
-        failure: false,
-        diffExists: true,
-        headCommit: 'abcdef',
+      httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: true, headCommit: 'abcdef',
         changedResources: [ 'some/file' ],
         backedUpResources: [ { resource: 'some/other/file', backupResource: 'some/other/backup.file' } ]
       });
       tick();
 
-      httpMock.match({
-        method: 'POST',
-        url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
-      })[0].flush(tclFileTarget);
+      httpMock.match(copyMatcher)[0].flush(tclFileTarget);
       tick();
 
       // messages where received and changedFiles and backedUpFiles were set
@@ -114,7 +146,7 @@ describe('PersistenceService', () => {
       expect(backedUpFiles[0].backupResource).toEqual('some/other/backup.file');
    })));
 
-  fit('ensure that pull passes no more "resources" and "dirtyResources" if closing/saved/non-dirty messages were received',
+  it('ensure that pull passes no more "resources" and "dirtyResources" if closing/saved/non-dirty messages were received',
       fakeAsync(inject([HttpTestingController, PersistenceService],
                        (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
@@ -134,16 +166,12 @@ describe('PersistenceService', () => {
       tick();
 
        // then
-      const pullMatcher = httpMock.match({
-        method: 'POST',
-        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
-      })[0];
-      expect(pullMatcher.request.body).toEqual(jasmine.objectContaining(
+      const pullMatched = httpMock.match(pullMatcher)[0];
+      expect(pullMatched.request.body).toEqual(jasmine.objectContaining(
         { resources: [ 'some/other/file', 'and/yet/another', 'and/still/another' ], dirtyResources: [ ] }));
-
     })));
 
-  fit('ensure that pull passes "resources" and "dirtyResources" without duplicates',
+  it('ensure that pull passes "resources" and "dirtyResources" without duplicates',
       fakeAsync(inject([HttpTestingController, PersistenceService],
                        (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
@@ -159,16 +187,13 @@ describe('PersistenceService', () => {
       tick();
 
        // then
-      const pullMatcher = httpMock.match({
-        method: 'POST',
-        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
-      })[0];
-      expect(pullMatcher.request.body).toEqual(jasmine.objectContaining(
+      const pullMatched = httpMock.match(pullMatcher)[0];
+      expect(pullMatched.request.body).toEqual(jasmine.objectContaining(
         { resources: [ 'some/file', 'some/other/file' ], dirtyResources: [ 'and/yet/another' ] }));
 
     })));
 
-  fit('returns a conflict if backend reports a conflict in the backend', fakeAsync(inject([HttpTestingController, PersistenceService],
+  it('returns a conflict if backend reports a conflict in the backend', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
       const tclFilePath = 'path/to/file?.tcl';
@@ -180,29 +205,20 @@ describe('PersistenceService', () => {
       persistenceService.copyResource(tclFileTarget, tclFilePath)
 
       // then
-        .then((result) => {
-          expect(result).toEqual(expectedConflict);
-        }, (response) => {
-          fail('expect conflict to be remapped to regular response!');
-        });
+      .then((result) => {
+        expect(result).toEqual(expectedConflict);
+      }, (response) => {
+        fail('expect conflict to be remapped to regular response!');
+      });
       tick();
 
-      httpMock.match({
-        method: 'POST',
-        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
-      })[0].flush({
-        failure: false,
-        diffExists: false,
-        headCommit: 'abcdef',
+      httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
         changedResources: [],
         backedUpResources: []
       });
       tick();
 
-      httpMock.match({
-        method: 'POST'
-        , url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
-      })[0].flush(message, {status: 409, statusText: 'Conflict'});
+      httpMock.match(copyMatcher)[0].flush(message, {status: 409, statusText: 'Conflict'});
   })));
 
   it('invokes REST endpoint with encoded path', fakeAsync(inject([HttpTestingController, PersistenceService],
@@ -215,6 +231,12 @@ describe('PersistenceService', () => {
 
     // then
     .then((response) => expect(response).toBe(''));
+    tick();
+
+    httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
+      changedResources: [],
+      backedUpResources: []
+    });
     tick();
 
     httpMock.match({
@@ -241,6 +263,12 @@ describe('PersistenceService', () => {
     .then((actualResult) => expect(actualResult).toEqual(expectedResult));
     tick();
 
+    httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
+      changedResources: [],
+      backedUpResources: []
+    });
+    tick();
+
     const actualRequest = httpMock.expectOne({ method: 'POST' });
     expect(actualRequest.request.url).toEqual(url);
     expect(actualRequest.request.params.get('type')).toEqual('file');
@@ -262,10 +290,16 @@ describe('PersistenceService', () => {
 
     // then
     .then((result) => {
-        expect(result).toEqual(expectedResult);
-      }, (response) => {
-        fail('expect conflict to be remapped to regular response!');
-      });
+      expect(result).toEqual(expectedResult);
+    }, (response) => {
+      fail('expect conflict to be remapped to regular response!');
+    });
+    tick();
+
+    httpMock.match(pullMatcher)[0].flush({ failure: false, diffExists: false, headCommit: 'abcdef',
+      changedResources: [],
+      backedUpResources: []
+    });
     tick();
 
     const actualRequest = httpMock.expectOne({ method: 'DELETE' });
