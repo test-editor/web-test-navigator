@@ -131,7 +131,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       const activitiesMap = new Map<string, UserActivityData[]>();
       activities.forEach(elementActivity => {
         if (activitiesMap.has(elementActivity.element)) {
-          activitiesMap.get(elementActivity.element).concat(elementActivity.activities);
+          activitiesMap.set(elementActivity.element, activitiesMap.get(elementActivity.element).concat(elementActivity.activities));
         } else {
           activitiesMap.set(elementActivity.element, elementActivity.activities.slice());
         }
