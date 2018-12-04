@@ -1,4 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import 'rxjs/add/operator/toPromise';
@@ -10,6 +10,7 @@ import { NAVIGATION_OPEN, NAVIGATION_RENAMED, EDITOR_RELOAD, NavigationRenamedPa
          FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
 import { FILES_BACKEDUP } from '../event-types';
+import { MessagingService } from '@testeditor/messaging-service';
 
 
 export const HTTP_STATUS_NO_CONTENT = 204;
