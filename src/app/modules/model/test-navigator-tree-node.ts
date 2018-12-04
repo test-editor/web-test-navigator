@@ -1,7 +1,8 @@
+import { isDevMode } from '@angular/core';
 import { TreeNode } from '@testeditor/testeditor-commons';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
+import { UserActivitySet } from '../test-navigator/user-activity-set';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
-import { isDevMode } from '@angular/core';
 
 export class TestNavigatorTreeNode implements TreeNode {
   private static readonly hideCssClass = 'hidden';
@@ -22,6 +23,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   expanded = undefined;
   parent: TestNavigatorTreeNode;
   dirty = false;
+  activities = UserActivitySet.EMPTY_SET;
 
   constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
     if (workspaceElement.type === ElementType.Folder) {

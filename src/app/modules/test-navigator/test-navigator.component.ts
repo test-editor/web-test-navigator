@@ -1,24 +1,26 @@
-import { Component, isDevMode, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
          TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
        } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, EDITOR_CLOSE  } from '../event-types-in';
-import { NAVIGATION_CREATED, NAVIGATION_OPEN, NAVIGATION_RENAMED, NAVIGATION_DELETED,
-         WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED } from '../event-types-out';
+import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED,
+  USER_ACTIVITY_UPDATED, ElementActivity, UserActivityData } from '../event-types-in';
+import { NAVIGATION_CREATED, NAVIGATION_DELETED, NAVIGATION_OPEN, NAVIGATION_RENAMED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED,
+  WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
-import { filterFor, testNavigatorFilter, isFileOfType, validExtensions } from '../model/filters';
+import { filterFor, isFileOfType, testNavigatorFilter, validExtensions } from '../model/filters';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { isConflict, Conflict } from '../persistence-service/conflict';
+import { Conflict, isConflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
-import { FilenameValidator } from './filename-validator';
-import { SubscriptionMap } from './subscription-map';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+import { FilenameValidator } from './filename-validator';
+import { SubscriptionMap } from './subscription-map';
+import { UserActivitySet } from './user-activity-set';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 
 export type ClipType = 'cut' | 'copy' | null;
@@ -46,6 +48,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private treeDeselectionChangeSubscription: Subscription;
   private testExecutionSubscription: Subscription;
   private testExecutionFailedSubscription: Subscription;
+  private userActivitySubscription: Subscription;
   private openFilesSubscriptions = new SubscriptionMap<TestNavigatorTreeNode>();
 
   errorMessage: string;
@@ -96,6 +99,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.updateModel();
     this.setupTreeSelectionChangeListener();
+    this.setupUserActivityChangeListener();
   }
 
   ngOnDestroy(): void {
@@ -104,6 +108,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.treeSelectionChangeSubscription.unsubscribe();
     this.testExecutionSubscription.unsubscribe();
     this.testExecutionFailedSubscription.unsubscribe();
+    this.userActivitySubscription.unsubscribe();
     this.openFilesSubscriptions.clear();
   }
 
@@ -118,6 +123,27 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
       if (node === this.selectedNode) {
         this.selectedNode = null;
       }
+    });
+  }
+
+  setupUserActivityChangeListener() {
+    this.userActivitySubscription = this.messagingService.subscribe(USER_ACTIVITY_UPDATED, (activities: ElementActivity[]) => {
+      const activitiesMap = new Map<string, UserActivityData[]>();
+      activities.forEach(elementActivity => {
+        if (activitiesMap.has(elementActivity.element)) {
+          activitiesMap.get(elementActivity.element).concat(elementActivity.activities);
+        } else {
+          activitiesMap.set(elementActivity.element, elementActivity.activities.slice());
+        }
+      });
+
+      this.model.forEach((node) => {
+        if (activitiesMap.has(node.id)) {
+          node.activities = new UserActivitySet(activitiesMap.get(node.id));
+        } else {
+          node.activities = UserActivitySet.EMPTY_SET;
+        }
+      });
     });
   }
 
