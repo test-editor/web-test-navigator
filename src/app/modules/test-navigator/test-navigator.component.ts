@@ -133,7 +133,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         if (activitiesMap.has(elementActivity.element)) {
           activitiesMap.get(elementActivity.element).concat(elementActivity.activities);
         } else {
-          activitiesMap.set(elementActivity.element, elementActivity.activities);
+          activitiesMap.set(elementActivity.element, elementActivity.activities.slice());
         }
       });
 
