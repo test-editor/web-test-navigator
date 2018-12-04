@@ -156,6 +156,17 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
+  private isRepullConflict(response: any): boolean {
+    if (this.isHttpErrorResponse(response)) {
+      if (response.status === HTTP_STATUS_CONFLICT) {
+        if (response.error === 'REPULL') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /** copy either a file to its new location (new location is the new filename),
       or copy whole directories (newPath is the path to the new directory to be created) */
   async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
@@ -174,14 +185,9 @@ export class PersistenceService extends AbstractPersistenceService {
           result = (await client.post(this.getCopyURL(newPath, sourcePath), '', { observe: 'response', responseType: 'text'})
                     .toPromise()).body;
         } catch (errorResponse) {
-          if (this.isHttpErrorResponse(errorResponse)) {
-            if (errorResponse.status === HTTP_STATUS_CONFLICT) {
-              if (errorResponse.error === 'REPULL') {
-                executePull = true;
-              }
-            }
-          }
-          if (!executePull) {
+          if (this.isRepullConflict(errorResponse)) {
+            executePull = true;
+          } else {
             this.informPullChanges(changedResources, backedUpResources);
             return this.getConflictOrThrowError(errorResponse);
           }
