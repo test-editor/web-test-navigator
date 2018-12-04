@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { IndexService, IndexDelta } from './index.service';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
+import { IndexDelta, IndexService } from './index.service';
 import { IndexServiceConfig } from './index.service.config';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
 
 @Injectable()
 export class XtextIndexService extends IndexService {

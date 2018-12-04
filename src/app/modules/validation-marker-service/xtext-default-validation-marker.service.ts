@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
 import { ValidationMarkerService, ValidationSummary } from './validation-marker.service';
 import { ValidationMarkerServiceConfig } from './validation-marker.service.config';

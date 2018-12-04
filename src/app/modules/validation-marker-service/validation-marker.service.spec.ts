@@ -1,13 +1,13 @@
-import { TestBed, inject, tick, fakeAsync } from '@angular/core/testing';
-import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
-import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
-import { ValidationMarkerService } from './validation-marker.service';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { XtextDefaultValidationMarkerService } from './xtext-default-validation-marker.service';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
+import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
+import { ValidationMarkerService } from './validation-marker.service';
+import { ValidationMarkerServiceConfig } from './validation-marker.service.config';
+import { XtextDefaultValidationMarkerService } from './xtext-default-validation-marker.service';
 
 const firstChild: WorkspaceElement = {
   name: 'firstChild',

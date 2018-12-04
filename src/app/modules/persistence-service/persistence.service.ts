@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { WorkspaceElement, ElementType } from './workspace-element';
-import { PersistenceServiceConfig } from './persistence.service.config';
-import { Conflict } from './conflict';
+import { Injectable } from '@angular/core';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
 import 'rxjs/add/operator/toPromise';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { Conflict } from './conflict';
+import { PersistenceServiceConfig } from './persistence.service.config';
+import { ElementType, WorkspaceElement } from './workspace-element';
 
 
 export const HTTP_STATUS_NO_CONTENT = 204;

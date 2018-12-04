@@ -7,7 +7,7 @@ import { ButtonsModule } from 'ngx-bootstrap/buttons';
 import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
 import { EDITOR_DIRTY_CHANGED, EDITOR_CLOSE, USER_ACTIVITY_UPDATED, ElementActivity } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
-import { HttpProviderService } from '../http-provider-service/http-provider.service';
+import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { IndexService } from '../index-service/index.service';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
