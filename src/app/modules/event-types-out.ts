@@ -30,3 +30,6 @@ export const SNACKBAR_DISPLAY_NOTIFICATION = 'snackbar.display.notification';
 
 // payload is string (path/id of resource)
 export const EDITOR_RELOAD = 'editor.reload';
+
+// payload is: Array<string> (path id of resource)
+export const FILES_CHANGED = 'files.changed';

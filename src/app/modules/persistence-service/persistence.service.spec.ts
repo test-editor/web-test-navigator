@@ -4,8 +4,8 @@ import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { Conflict } from './conflict';
-import { PersistenceService } from './persistence.service';
 import { PersistenceServiceConfig } from './persistence.service.config';
+import { PersistenceService, BackupEntry } from './persistence.service';
 import { ElementType } from './workspace-element';
 
 describe('PersistenceService', () => {
@@ -39,6 +39,171 @@ describe('PersistenceService', () => {
       messagingService.publish('httpClient.supplied', { httpClient: httpClient });
     });
   });
+
+  fit('copies a resource regularly if backend reports no conflict nor error', fakeAsync(inject([HttpTestingController, PersistenceService],
+    (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
+      // given
+      const tclFilePath = 'path/to/file?.tcl';
+      const tclFileTarget = 'newpath/to/file?.tcl';
+
+      // when
+      persistenceService.copyResource(tclFileTarget, tclFilePath)
+
+      // then
+        .then((response) => expect(response).toBe(tclFileTarget));
+      tick();
+
+      httpMock.match({
+        method: 'POST',
+        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
+      })[0].flush({
+        failure: false,
+        diffExists: false,
+        headCommit: 'abcdef',
+        changedResources: [],
+        backedUpResources: []
+      });
+      tick();
+
+      httpMock.match({
+        method: 'POST'
+        , url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
+      })[0].flush(tclFileTarget);
+  })));
+
+  fit('expect messages about changes when copying and pull reports changes', fakeAsync(inject([HttpTestingController, PersistenceService],
+    (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
+
+      // given
+      const tclFilePath = 'path/to/file?.tcl';
+      const tclFileTarget = 'newpath/to/file?.tcl';
+      let changedFiles: string[];
+      let backedUpFiles: BackupEntry[];
+
+      // when
+      messagingService.subscribe('files.changed', (files) => { changedFiles = files; });
+      messagingService.subscribe('files.backedup', (files) => { backedUpFiles = files; });
+      persistenceService.copyResource(tclFileTarget, tclFilePath)
+
+       // then
+        .then((response) => expect(response).toBe(tclFileTarget));
+      tick();
+
+     httpMock.match({
+       method: 'POST',
+       url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
+      })[0].flush({
+        failure: false,
+        diffExists: true,
+        headCommit: 'abcdef',
+        changedResources: [ 'some/file' ],
+        backedUpResources: [ { resource: 'some/other/file', backupResource: 'some/other/backup.file' } ]
+      });
+      tick();
+
+      httpMock.match({
+        method: 'POST',
+        url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
+      })[0].flush(tclFileTarget);
+      tick();
+
+      // messages where received and changedFiles and backedUpFiles were set
+      expect(changedFiles).toContain('some/file');
+      expect(backedUpFiles.length).toEqual(1);
+      expect(backedUpFiles[0].resource).toEqual('some/other/file');
+      expect(backedUpFiles[0].backupResource).toEqual('some/other/backup.file');
+   })));
+
+  fit('ensure that pull passes no more "resources" and "dirtyResources" if closing/saved/non-dirty messages were received',
+      fakeAsync(inject([HttpTestingController, PersistenceService],
+                       (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
+      // given
+      persistenceService.startSubscriptions();
+
+      // when
+      messagingService.publish('navigation.open', 'some/file');
+      messagingService.publish('navigation.open', 'some/other/file');
+      messagingService.publish('editor.dirtyStateChanged', { path: 'yet/another', dirty: true });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/still/another', dirty: true });
+      messagingService.publish('editor.close', { id: 'some/file' }); // not open not dirty
+      messagingService.publish('editor.close', { id: 'yet/another' }); // not open, not dirty
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: false }); // still open but not dirty
+      messagingService.publish('editor.save.completed', { id: 'and/still/another'}); // still open, but not dirty
+      persistenceService.copyResource('any', 'file'); // could be any other action that executes a pull
+      tick();
+
+       // then
+      const pullMatcher = httpMock.match({
+        method: 'POST',
+        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
+      })[0];
+      expect(pullMatcher.request.body).toEqual(jasmine.objectContaining(
+        { resources: [ 'some/other/file', 'and/yet/another', 'and/still/another' ], dirtyResources: [ ] }));
+
+    })));
+
+  fit('ensure that pull passes "resources" and "dirtyResources" without duplicates',
+      fakeAsync(inject([HttpTestingController, PersistenceService],
+                       (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
+      // given
+      persistenceService.startSubscriptions();
+
+      // when
+      messagingService.publish('navigation.open', 'some/file');
+      messagingService.publish('navigation.open', 'some/other/file');
+      messagingService.publish('navigation.open', 'some/other/file');
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
+      persistenceService.copyResource('any', 'file'); // could be any other action that executes a pull
+      tick();
+
+       // then
+      const pullMatcher = httpMock.match({
+        method: 'POST',
+        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
+      })[0];
+      expect(pullMatcher.request.body).toEqual(jasmine.objectContaining(
+        { resources: [ 'some/file', 'some/other/file' ], dirtyResources: [ 'and/yet/another' ] }));
+
+    })));
+
+  fit('returns a conflict if backend reports a conflict in the backend', fakeAsync(inject([HttpTestingController, PersistenceService],
+    (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
+      // given
+      const tclFilePath = 'path/to/file?.tcl';
+      const tclFileTarget = 'newpath/to/file?.tcl';
+      const message = `The file '${tclFileTarget}' already exists.`;
+      const expectedConflict = new Conflict(message);
+
+      // when
+      persistenceService.copyResource(tclFileTarget, tclFilePath)
+
+      // then
+        .then((result) => {
+          expect(result).toEqual(expectedConflict);
+        }, (response) => {
+          fail('expect conflict to be remapped to regular response!');
+        });
+      tick();
+
+      httpMock.match({
+        method: 'POST',
+        url: serviceConfig.persistenceServiceUrl + '/workspace/pull'
+      })[0].flush({
+        failure: false,
+        diffExists: false,
+        headCommit: 'abcdef',
+        changedResources: [],
+        backedUpResources: []
+      });
+      tick();
+
+      httpMock.match({
+        method: 'POST'
+        , url: serviceConfig.persistenceServiceUrl + '/documents/newpath/to/file%3F.tcl?source=path%2Fto%2Ffile%3F.tcl&clean=true'
+      })[0].flush(message, {status: 409, statusText: 'Conflict'});
+  })));
 
   it('invokes REST endpoint with encoded path', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {

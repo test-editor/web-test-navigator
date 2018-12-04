@@ -6,8 +6,10 @@ import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType, WorkspaceElement } from './workspace-element';
 import { Subscription } from 'rxjs/Subscription';
-import { NAVIGATION_OPEN, NAVIGATION_RENAMED, EDITOR_RELOAD, NavigationRenamedPayload } from '../event-types-out';
+import { NAVIGATION_OPEN, NAVIGATION_RENAMED, EDITOR_RELOAD, NavigationRenamedPayload,
+         FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
+import { FILES_BACKEDUP } from '../event-types';
 
 
 export const HTTP_STATUS_NO_CONTENT = 204;
@@ -22,28 +24,32 @@ export abstract class AbstractPersistenceService {
   abstract getBinaryResource(path: string): Promise<Blob>;
 }
 
-export interface OriginalWithBackup {
+export interface BackupEntry {
   resource: string;
   backupResource: string;
 }
 
 export interface PullResponse {
+  failure: boolean;
+  diffExists: boolean;
   headCommit: string;
   changedResources: Array<string>;
-  backedUpResources: Array<OriginalWithBackup>;
+  backedUpResources: Array<BackupEntry>;
 }
 
 @Injectable()
-export class PersistenceService extends AbstractPersistenceService implements OnInit, OnDestroy {
+export class PersistenceService extends AbstractPersistenceService {
 
   private serviceUrl: string;
   private listFilesUrl: string;
-  private openNonDirtyTabs: string[];
-  private openDirtyTabs: string[];
+  private openNonDirtyTabs: Array<string>;
+  private openDirtyTabs: Array<string>;
   private subscriptions: Subscription[];
 
-  ngOnInit(): void {
+  startSubscriptions(): void {
+    this.subscriptions = new Array();
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (id) => {
+      this.removeNonDirtyTab(id);
       this.openNonDirtyTabs.push(id);
     }));
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
@@ -62,7 +68,9 @@ export class PersistenceService extends AbstractPersistenceService implements On
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
-      if (!this.removeNonDirtyTab(payload.id) || !this.removeDirtyTab(payload.id)) {
+      const removedNonDirty = this.removeNonDirtyTab(payload.id);
+      const removedDirty = this.removeDirtyTab(payload.id);
+      if (!(removedDirty || removedNonDirty)) {
         console.log('WARNING: received ' + EDITOR_CLOSE
                     + ' but no corresponding open tab is known within persistence service backend');
         console.log(payload);
@@ -91,7 +99,7 @@ export class PersistenceService extends AbstractPersistenceService implements On
   private removeDirtyTab(path: string): boolean {
     const dirtyTab = this.openDirtyTabs.indexOf(path);
     if (dirtyTab >= 0) {
-      this.openDirtyTabs = this.openDirtyTabs.splice(dirtyTab);
+      this.openDirtyTabs.splice(dirtyTab, 1);
       return true;
     } else {
       return false;
@@ -101,14 +109,14 @@ export class PersistenceService extends AbstractPersistenceService implements On
   private removeNonDirtyTab(path: string): boolean {
     const nonDirtyTab = this.openNonDirtyTabs.indexOf(path);
     if (nonDirtyTab >= 0) {
-      this.openNonDirtyTabs = this.openNonDirtyTabs.splice(nonDirtyTab);
+      this.openNonDirtyTabs.splice(nonDirtyTab, 1);
       return true;
     } else {
       return false;
     }
   }
 
-  ngOnDestroy(): void {
+  stopSubscriptions(): void {
     this.subscriptions.forEach((it) => it.unsubscribe());
   }
 
@@ -116,6 +124,8 @@ export class PersistenceService extends AbstractPersistenceService implements On
     super();
     this.serviceUrl = config.persistenceServiceUrl;
     this.listFilesUrl = `${config.persistenceServiceUrl}/workspace/list-files`;
+    this.openNonDirtyTabs = new Array<string>();
+    this.openDirtyTabs = new Array<string>();
   }
 
   async listFiles(): Promise<WorkspaceElement> {
@@ -123,15 +133,67 @@ export class PersistenceService extends AbstractPersistenceService implements On
     return await client.get<WorkspaceElement>(this.listFilesUrl).toPromise();
   }
 
+  private informPullChanges(changedResources: Array<string>, backedUpResources: Array<BackupEntry>): void {
+    const msgprefix = 'Files of your workspace were modified on the repository.';
+    let changedMessage;
+    let backedUpMessage;
+    if (changedResources.length > 0) {
+      // editor will reload, inform user about this
+      this.messagingService.publish(FILES_CHANGED, changedResources);
+      changedMessage = '\nPlease check changes on: ' + changedResources.join(', ');
+    }
+    if (backedUpResources.length > 0) {
+      // editor will replace resource with backup (name, not content),
+      // test-navigator must update tree with additional backup file! inform user about that
+      this.messagingService.publish(FILES_BACKEDUP, backedUpResources);
+      backedUpMessage = '\nPlease check backups of: '
+        + backedUpResources.map((entry) => entry.resource + '->' + entry.backupResource).join(', ');
+    }
+    if (changedMessage || backedUpMessage) {
+      this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION,
+                                    { message: msgprefix + changedMessage ? changedMessage : ''
+                                      + backedUpMessage ? backedUpMessage : '' });
+    }
+  }
+
   /** copy either a file to its new location (new location is the new filename),
       or copy whole directories (newPath is the path to the new directory to be created) */
   async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
     const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.post(this.getCopyURL(newPath, sourcePath), '', { observe: 'response', responseType: 'text'}).toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
+    let result: string;
+    let executePull = true;
+    let changedResources = new Array<string>();
+    let  backedUpResources = new Array<BackupEntry>();
+    while (executePull) {
+      executePull = false;
+      const pullResponse = await this.executePull(client);
+      if (!pullResponse.failure) {
+        changedResources = changedResources.concat(pullResponse.changedResources);
+        backedUpResources = backedUpResources.concat(pullResponse.backedUpResources);
+        try {
+          result = (await client.post(this.getCopyURL(newPath, sourcePath), '', { observe: 'response', responseType: 'text'})
+                    .toPromise()).body;
+        } catch (errorResponse) {
+          if (this.isHttpErrorResponse(errorResponse)) {
+            if (errorResponse.status === HTTP_STATUS_CONFLICT) {
+              if (errorResponse.error === 'REPULL') {
+                executePull = true;
+              }
+            }
+          }
+          if (!executePull) {
+            this.informPullChanges(changedResources, backedUpResources);
+            return this.getConflictOrThrowError(errorResponse);
+          }
+        }
+      } else {
+        // TODO this is incomplete
+        this.informPullChanges(changedResources, backedUpResources);
+        throw new Error('pull failure');
+      }
     }
+    this.informPullChanges(changedResources, backedUpResources);
+    return result;
   }
 
   async renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
@@ -190,15 +252,15 @@ export class PersistenceService extends AbstractPersistenceService implements On
     return resultingMessages;
   }
 
-  private async executePull(): Promise<PullResponse> {
-    const client = await this.httpProvider.getHttpClient();
+  private async executePull(httpClient?: HttpClient): Promise<PullResponse> {
+    const client = httpClient ? httpClient : await this.httpProvider.getHttpClient();
     try {
-      return (await client.post(this.getPullURL(), '',
-                                { observe: 'response', responseType: 'json',
-                                  params: { resources: this.openNonDirtyTabs,
-                                            dirtyResources: this.openDirtyTabs}}).toPromise()).body as PullResponse;
+      return (await client.post(this.getPullURL(),
+                                { resources: this.openNonDirtyTabs, dirtyResources: this.openDirtyTabs },
+                                { observe: 'response', responseType: 'json' }).toPromise()).body as PullResponse;
     } catch (errorResponse) {
       // TODO: pull must always work, otherwise the local workspace is in deep trouble
+      console.error('could not execute pull', errorResponse);
     }
   }
 
@@ -212,7 +274,7 @@ export class PersistenceService extends AbstractPersistenceService implements On
   }
 
   private getCopyURL(path: string, sourcePath: string): string {
-    return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath);
+    return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath) + '&clean=true';
   }
 
   private getPullURL(): string {
