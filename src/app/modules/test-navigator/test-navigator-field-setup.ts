@@ -4,6 +4,7 @@ import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { ElementType } from '../persistence-service/workspace-element';
 import { StyleProvider } from '../style-provider/style-provider';
 import { UserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
+import { UserActivityType } from '../style-provider/user-activity-type';
 
 @Injectable()
 export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
@@ -30,9 +31,10 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
   private readonly activityMarkerSetup = {
       condition: (node: TestNavigatorTreeNode) => node && (node.type === ElementType.File || !node.expanded),
       states: [{
-        condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly('executedTest'),
-        cssClasses: this.userActivityStyles.getCssClasses('executedTest'),
-        label: (node: TestNavigatorTreeNode) => this.userActivityLabeler.getLabel(node.activities.getUsers('executedTest'), 'executedTest')
+        condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly(UserActivityType.EXECUTED_TEST),
+        cssClasses: this.userActivityStyles.getCssClasses(UserActivityType.EXECUTED_TEST),
+        label: (node: TestNavigatorTreeNode) =>
+          this.userActivityLabeler.getLabel(node.activities.getUsers(UserActivityType.EXECUTED_TEST), UserActivityType.EXECUTED_TEST)
       }]
     };
 
