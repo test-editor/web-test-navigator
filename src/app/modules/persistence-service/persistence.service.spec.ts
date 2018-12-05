@@ -191,7 +191,7 @@ describe('PersistenceService', () => {
 
     })));
 
-  it('returns a conflict if backend reports a conflict in the backend', fakeAsync(inject([HttpTestingController, PersistenceService],
+  it('returns a conflict if backend reports one', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
       const tclFilePath = 'path/to/file?.tcl';
