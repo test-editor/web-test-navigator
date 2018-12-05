@@ -43,7 +43,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   private pasteRunning = false;
   private renameRunning = false;
 
-  private fileSavedSubscription: Subscription;
   private treeSelectionChangeSubscription: Subscription;
   private treeDeselectionChangeSubscription: Subscription;
   private testExecutionSubscription: Subscription;
@@ -103,7 +102,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.fileSavedSubscription.unsubscribe();
     this.treeDeselectionChangeSubscription.unsubscribe();
     this.treeSelectionChangeSubscription.unsubscribe();
     this.testExecutionSubscription.unsubscribe();

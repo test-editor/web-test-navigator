@@ -44,10 +44,9 @@ export class PersistenceService extends AbstractPersistenceService {
   private listFilesUrl: string;
   private openNonDirtyTabs: Set<string>;
   private openDirtyTabs: Set<string>;
-  private subscriptions: Subscription[];
+  private subscriptions: Subscription[] = [];
 
   startSubscriptions(): void {
-    this.subscriptions = new Array();
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (id) => {
       this.openNonDirtyTabs.add(id);
     }));
@@ -108,8 +107,12 @@ export class PersistenceService extends AbstractPersistenceService {
   }
 
   async listFiles(): Promise<WorkspaceElement> {
-    const client = await this.httpProvider.getHttpClient();
-    return await client.get<WorkspaceElement>(this.listFilesUrl).toPromise();
+    const result = await this.wrapActionInPulls((client) => client.get<WorkspaceElement>(this.listFilesUrl).toPromise());
+    if (result instanceof Conflict) {
+      throw Error('conflict "' + result.message + '" return on list files');
+    } else {
+      return result;
+    }
   }
 
   private informPullChanges(changedResources: Array<string>, backedUpResources: Array<BackupEntry>): void {
@@ -149,9 +152,9 @@ export class PersistenceService extends AbstractPersistenceService {
 
   /** wrap the given async funnction in a pull loop that will pull as long as the backend requests pulls
       before the backend actually executes the expected function */
-  private async wrapActionInPulls(action: (client: HttpClient) => Promise<string | Conflict>): Promise<string | Conflict> {
+  private async wrapActionInPulls<T>(action: (client: HttpClient) => Promise<T | Conflict>): Promise<T | Conflict> {
     const client = await this.httpProvider.getHttpClient();
-    let result: string | Conflict;
+    let result: T | Conflict;
     let executePullAgain = true;
     let changedResources = new Array<string>();
     let  backedUpResources = new Array<BackupEntry>();
