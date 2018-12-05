@@ -42,25 +42,24 @@ export class PersistenceService extends AbstractPersistenceService {
 
   private serviceUrl: string;
   private listFilesUrl: string;
-  private openNonDirtyTabs: Array<string>;
-  private openDirtyTabs: Array<string>;
+  private openNonDirtyTabs: Set<string>;
+  private openDirtyTabs: Set<string>;
   private subscriptions: Subscription[];
 
   startSubscriptions(): void {
     this.subscriptions = new Array();
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (id) => {
-      this.removeNonDirtyTab(id);
-      this.openNonDirtyTabs.push(id);
+      this.openNonDirtyTabs.add(id);
     }));
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
-      this.openNonDirtyTabs = new Array();
-      this.openDirtyTabs = new Array();
+      this.openNonDirtyTabs.clear();
+      this.openDirtyTabs.clear();
     }));
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_RENAMED, (payload) => {
-      if (this.removeNonDirtyTab(payload.oldPath)) {
-        this.openNonDirtyTabs.push(payload.newPath);
-      } else if (this.removeDirtyTab(payload.oldPath)) {
-        this.openDirtyTabs.push(payload.newPath);
+      if (this.openNonDirtyTabs.delete(payload.oldPath)) {
+        this.openNonDirtyTabs.add(payload.newPath);
+      } else if (this.openDirtyTabs.delete(payload.oldPath)) {
+        this.openDirtyTabs.add(payload.newPath);
       } else {
         console.log('WARNING: received ' + NAVIGATION_RENAMED
                     + ' but no corresponding open tab is known within persistence service backend');
@@ -68,8 +67,8 @@ export class PersistenceService extends AbstractPersistenceService {
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
-      const removedNonDirty = this.removeNonDirtyTab(payload.id);
-      const removedDirty = this.removeDirtyTab(payload.id);
+      const removedNonDirty = this.openNonDirtyTabs.delete(payload.id);
+      const removedDirty = this.openDirtyTabs.delete(payload.id);
       if (!(removedDirty || removedNonDirty)) {
         console.log('WARNING: received ' + EDITOR_CLOSE
                     + ' but no corresponding open tab is known within persistence service backend');
@@ -77,43 +76,23 @@ export class PersistenceService extends AbstractPersistenceService {
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload: EditorDirtyChangedPayload) => {
-      this.removeNonDirtyTab(payload.path);
-      this.removeDirtyTab(payload.path);
+      this.openNonDirtyTabs.delete(payload.path);
+      this.openDirtyTabs.delete(payload.path);
       if (payload.dirty) {
-        this.openDirtyTabs.push(payload.path);
+        this.openDirtyTabs.add(payload.path);
       } else {
-        this.openNonDirtyTabs.push(payload.path);
+        this.openNonDirtyTabs.add(payload.path);
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
-      if (this.removeDirtyTab(payload.id)) {
-          this.openNonDirtyTabs.push(payload.id);
+      if (this.openDirtyTabs.delete(payload.id)) {
+          this.openNonDirtyTabs.add(payload.id);
       } else {
         console.log('WARNING: received ' + EDITOR_SAVE_COMPLETED
                     + ' but no corresponding open dirty tab is known within persistence service backend');
         console.log(payload);
       }
     }));
-  }
-
-  private removeDirtyTab(path: string): boolean {
-    const dirtyTab = this.openDirtyTabs.indexOf(path);
-    if (dirtyTab >= 0) {
-      this.openDirtyTabs.splice(dirtyTab, 1);
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  private removeNonDirtyTab(path: string): boolean {
-    const nonDirtyTab = this.openNonDirtyTabs.indexOf(path);
-    if (nonDirtyTab >= 0) {
-      this.openNonDirtyTabs.splice(nonDirtyTab, 1);
-      return true;
-    } else {
-      return false;
-    }
   }
 
   stopSubscriptions(): void {
@@ -124,8 +103,8 @@ export class PersistenceService extends AbstractPersistenceService {
     super();
     this.serviceUrl = config.persistenceServiceUrl;
     this.listFilesUrl = `${config.persistenceServiceUrl}/workspace/list-files`;
-    this.openNonDirtyTabs = new Array<string>();
-    this.openDirtyTabs = new Array<string>();
+    this.openNonDirtyTabs = new Set<string>();
+    this.openDirtyTabs = new Set<string>();
   }
 
   async listFiles(): Promise<WorkspaceElement> {
@@ -239,7 +218,7 @@ export class PersistenceService extends AbstractPersistenceService {
     const client = httpClient ? httpClient : await this.httpProvider.getHttpClient();
     try {
       return (await client.post(this.getPullURL(),
-                                { resources: this.openNonDirtyTabs, dirtyResources: this.openDirtyTabs },
+                                { resources: Array.from(this.openNonDirtyTabs), dirtyResources: Array.from(this.openDirtyTabs) },
                                 { observe: 'response', responseType: 'json' }).toPromise()).body as PullResponse;
     } catch (errorResponse) {
       // TODO: pull must always work, otherwise the local workspace is in deep trouble

@@ -152,10 +152,11 @@ describe('PersistenceService', () => {
 
       // when
       messagingService.publish('navigation.open', 'some/file/closed');
-      messagingService.publish('navigation.open', 'some/other/file');
+      messagingService.publish('navigation.open', 'some/open-file');
       messagingService.publish('editor.dirtyStateChanged', { path: 'yet/another/closed', dirty: true });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/a-file/no-longer-dirty', dirty: true });
-      messagingService.publish('editor.dirtyStateChanged', { path: 'and/still/another', dirty: true });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/still/a-file/no-longer-dirty', dirty: true });
+
       messagingService.publish('editor.close', { id: 'some/file/closed' });
       messagingService.publish('editor.close', { id: 'yet/another/closed' });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/a-file/no-longer-dirty', dirty: false });
@@ -166,7 +167,7 @@ describe('PersistenceService', () => {
        // then
       const pullMatched = httpMock.match(pullMatcher)[0];
       expect(pullMatched.request.body).toEqual(jasmine.objectContaining(
-        { resources: [ 'some/other/file', 'and/a-file/no-longer-dirty', 'and/still/a-file/no-longer-dirty' ], dirtyResources: [ ] }));
+        { resources: [ 'some/open-file', 'and/a-file/no-longer-dirty', 'and/still/a-file/no-longer-dirty' ], dirtyResources: [ ] }));
     })));
 
   it('ensure that pull passes "resources" and "dirtyResources" without duplicates',
