@@ -17,6 +17,9 @@ import { XtextDefaultValidationMarkerService } from '../validation-marker-servic
 import { FilenameValidator } from './filename-validator';
 import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
+import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
+import { UserActivityLabelProvider, DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
+
 @NgModule({
   imports: [
     CommonModule, TreeViewerModule, FormsModule, ButtonsModule.forRoot(), MessagingModule.forRoot()
@@ -45,7 +48,9 @@ export class TestNavigatorModule {
         { provide: PersistenceServiceConfig, useValue: persistenceConfig },
         { provide: IndexServiceConfig, useValue: indexConfig },
         { provide: ValidationMarkerServiceConfig, useValue: validationConfig },
-        { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup }
+        { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup },
+        { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
+        { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
       ]
     };
   }
