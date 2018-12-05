@@ -151,22 +151,22 @@ describe('PersistenceService', () => {
       persistenceService.startSubscriptions();
 
       // when
-      messagingService.publish('navigation.open', 'some/file');
+      messagingService.publish('navigation.open', 'some/file/closed');
       messagingService.publish('navigation.open', 'some/other/file');
-      messagingService.publish('editor.dirtyStateChanged', { path: 'yet/another', dirty: true });
-      messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'yet/another/closed', dirty: true });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/a-file/no-longer-dirty', dirty: true });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/still/another', dirty: true });
-      messagingService.publish('editor.close', { id: 'some/file' }); // not open not dirty
-      messagingService.publish('editor.close', { id: 'yet/another' }); // not open, not dirty
-      messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: false }); // still open but not dirty
-      messagingService.publish('editor.save.completed', { id: 'and/still/another'}); // still open, but not dirty
+      messagingService.publish('editor.close', { id: 'some/file/closed' });
+      messagingService.publish('editor.close', { id: 'yet/another/closed' });
+      messagingService.publish('editor.dirtyStateChanged', { path: 'and/a-file/no-longer-dirty', dirty: false });
+      messagingService.publish('editor.save.completed', { id: 'and/still/a-file/no-longer-dirty'});
       persistenceService.copyResource('any', 'file'); // could be any other action that executes a pull
       tick();
 
        // then
       const pullMatched = httpMock.match(pullMatcher)[0];
       expect(pullMatched.request.body).toEqual(jasmine.objectContaining(
-        { resources: [ 'some/other/file', 'and/yet/another', 'and/still/another' ], dirtyResources: [ ] }));
+        { resources: [ 'some/other/file', 'and/a-file/no-longer-dirty', 'and/still/a-file/no-longer-dirty' ], dirtyResources: [ ] }));
     })));
 
   it('ensure that pull passes "resources" and "dirtyResources" without duplicates',
