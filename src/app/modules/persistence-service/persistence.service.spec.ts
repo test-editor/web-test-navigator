@@ -137,7 +137,7 @@ describe('PersistenceService', () => {
       httpMock.match(copyMatcher)[0].flush(tclFileTarget);
       tick();
 
-      // messages where received and changedFiles and backedUpFiles were set
+      // messages were received and changedFiles and backedUpFiles were set
       expect(changedFiles).toContain('some/file');
       expect(backedUpFiles.length).toEqual(1);
       expect(backedUpFiles[0].resource).toEqual('some/other/file');
@@ -191,7 +191,7 @@ describe('PersistenceService', () => {
 
     })));
 
-  it('returns a conflict if backend reports a conflict in the backend', fakeAsync(inject([HttpTestingController, PersistenceService],
+  it('returns a conflict if backend reports one', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
       const tclFilePath = 'path/to/file?.tcl';
@@ -205,7 +205,7 @@ describe('PersistenceService', () => {
       // then
       .then((result) => {
         expect(result).toEqual(expectedConflict);
-      }, (response) => {
+      }, (error) => {
         fail('expect conflict to be remapped to regular response!');
       });
       tick();
