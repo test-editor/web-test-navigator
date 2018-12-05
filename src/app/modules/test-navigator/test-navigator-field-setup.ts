@@ -4,11 +4,7 @@ import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { ElementType } from '../persistence-service/workspace-element';
 import { StyleProvider } from '../style-provider/style-provider';
 import { UserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
-
-// TODO remove duplication with test-editor-web
-export enum UserActivityType {
-  EXECUTED_TEST = 'executed.test'
-}
+import { UserActivityType } from '../style-provider/user-activity-type';
 
 @Injectable()
 export class TestNavigatorFieldSetup implements IndicatorFieldSetup {

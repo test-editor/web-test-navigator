@@ -1,3 +1,5 @@
+import { UserActivityType } from './user-activity-type';
+
 export abstract class UserActivityLabelProvider {
   abstract getLabel(users: string[], activityType: string): string;
 }
@@ -18,7 +20,7 @@ export class DefaultUserActivityLabelProvider extends UserActivityLabelProvider 
 
   private activityString(type: string, singular: boolean) {
     switch (type) {
-      case 'executedTest': return (singular ? ' is ' : ' are ') + 'executing this test';
+      case UserActivityType.EXECUTED_TEST: return (singular ? ' is ' : ' are ') + 'executing this test';
       default: return (singular ? ' is ' : ' are ') + 'working on this';
     }
   }

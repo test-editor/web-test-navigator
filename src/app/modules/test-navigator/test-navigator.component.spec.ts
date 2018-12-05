@@ -24,6 +24,7 @@ import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
 import { UserActivityLabelProvider, DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
 import { UserActivitySet } from './user-activity-set';
+import { UserActivityType } from '../style-provider/user-activity-type';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -987,8 +988,8 @@ describe('TestNavigatorComponent', () => {
     await component.updateModel();
     const collaboratorActivities: ElementActivity[] = [
       {element: 'src/test/java/test.tcl', activities: [
-        { user: 'John Doe', type: 'executedTest'},
-        { user: 'Jane Doe', type: 'executedTest'}]
+        { user: 'John Doe', type: UserActivityType.EXECUTED_TEST},
+        { user: 'Jane Doe', type: UserActivityType.EXECUTED_TEST}]
       }];
 
     // when
@@ -1009,7 +1010,7 @@ describe('TestNavigatorComponent', () => {
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
     await component.updateModel();
     const tclFile = component.model.children[1];
-    tclFile.activities = new UserActivitySet([{ user: 'John Doe', type: 'executedTest'}]);
+    tclFile.activities = new UserActivitySet([{ user: 'John Doe', type: UserActivityType.EXECUTED_TEST}]);
     fixture.detectChanges();
     let testTclUserActivityIcon = fixture.debugElement.query(By.css(
       'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));

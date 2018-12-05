@@ -1,4 +1,4 @@
-import { UserActivityType } from '../test-navigator/test-navigator-field-setup';
+import { UserActivityType } from './user-activity-type';
 
 export abstract class StyleProvider {
   abstract getCssClasses(key: string): string;
