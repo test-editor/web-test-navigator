@@ -137,7 +137,7 @@ describe('PersistenceService', () => {
       httpMock.match(copyMatcher)[0].flush(tclFileTarget);
       tick();
 
-      // messages where received and changedFiles and backedUpFiles were set
+      // messages were received and changedFiles and backedUpFiles were set
       expect(changedFiles).toContain('some/file');
       expect(backedUpFiles.length).toEqual(1);
       expect(backedUpFiles[0].resource).toEqual('some/other/file');
