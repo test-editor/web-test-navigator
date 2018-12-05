@@ -1,10 +1,15 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import 'rxjs/add/operator/toPromise';
 import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType, WorkspaceElement } from './workspace-element';
+import { Subscription } from 'rxjs/Subscription';
+import { NAVIGATION_OPEN, NAVIGATION_RENAMED, FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';
+import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
+import { FILES_BACKEDUP } from '../event-types';
+import { MessagingService } from '@testeditor/messaging-service';
 
 
 export const HTTP_STATUS_NO_CONTENT = 204;
@@ -19,16 +24,87 @@ export abstract class AbstractPersistenceService {
   abstract getBinaryResource(path: string): Promise<Blob>;
 }
 
+export interface BackupEntry {
+  resource: string;
+  backupResource: string;
+}
+
+export interface PullResponse {
+  failure: boolean;
+  diffExists: boolean;
+  headCommit: string;
+  changedResources: Array<string>;
+  backedUpResources: Array<BackupEntry>;
+}
+
 @Injectable()
 export class PersistenceService extends AbstractPersistenceService {
 
   private serviceUrl: string;
   private listFilesUrl: string;
+  private openNonDirtyTabs: Set<string>;
+  private openDirtyTabs: Set<string>;
+  private subscriptions: Subscription[];
 
-  constructor(config: PersistenceServiceConfig, private httpProvider: HttpProviderService) {
+  startSubscriptions(): void {
+    this.subscriptions = new Array();
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (id) => {
+      this.openNonDirtyTabs.add(id);
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
+      this.openNonDirtyTabs.clear();
+      this.openDirtyTabs.clear();
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_RENAMED, (payload) => {
+      if (this.openNonDirtyTabs.delete(payload.oldPath)) {
+        this.openNonDirtyTabs.add(payload.newPath);
+      } else if (this.openDirtyTabs.delete(payload.oldPath)) {
+        this.openDirtyTabs.add(payload.newPath);
+      } else {
+        console.log('WARNING: received ' + NAVIGATION_RENAMED
+                    + ' but no corresponding open tab is known within persistence service backend');
+        console.log(payload);
+      }
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
+      const removedNonDirty = this.openNonDirtyTabs.delete(payload.id);
+      const removedDirty = this.openDirtyTabs.delete(payload.id);
+      if (!(removedDirty || removedNonDirty)) {
+        console.log('WARNING: received ' + EDITOR_CLOSE
+                    + ' but no corresponding open tab is known within persistence service backend');
+        console.log(payload);
+      }
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload: EditorDirtyChangedPayload) => {
+      this.openNonDirtyTabs.delete(payload.path);
+      this.openDirtyTabs.delete(payload.path);
+      if (payload.dirty) {
+        this.openDirtyTabs.add(payload.path);
+      } else {
+        this.openNonDirtyTabs.add(payload.path);
+      }
+    }));
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
+      if (this.openDirtyTabs.delete(payload.id)) {
+          this.openNonDirtyTabs.add(payload.id);
+      } else {
+        console.log('WARNING: received ' + EDITOR_SAVE_COMPLETED
+                    + ' but no corresponding open dirty tab is known within persistence service backend');
+        console.log(payload);
+      }
+    }));
+  }
+
+  stopSubscriptions(): void {
+    this.subscriptions.forEach((it) => it.unsubscribe());
+  }
+
+  constructor(config: PersistenceServiceConfig, private httpProvider: HttpProviderService, private messagingService: MessagingService) {
     super();
     this.serviceUrl = config.persistenceServiceUrl;
     this.listFilesUrl = `${config.persistenceServiceUrl}/workspace/list-files`;
+    this.openNonDirtyTabs = new Set<string>();
+    this.openDirtyTabs = new Set<string>();
   }
 
   async listFiles(): Promise<WorkspaceElement> {
@@ -36,42 +112,117 @@ export class PersistenceService extends AbstractPersistenceService {
     return await client.get<WorkspaceElement>(this.listFilesUrl).toPromise();
   }
 
+  private informPullChanges(changedResources: Array<string>, backedUpResources: Array<BackupEntry>): void {
+    const msgprefix = 'Files of your workspace were modified on the repository.';
+    let changedMessage;
+    let backedUpMessage;
+    if (changedResources.length > 0) {
+      // editor will reload, inform user about this
+      this.messagingService.publish(FILES_CHANGED, changedResources);
+      changedMessage = '\nPlease check changes on: ' + changedResources.join(', ');
+    }
+    if (backedUpResources.length > 0) {
+      // editor will replace resource with backup (name, not content),
+      // test-navigator must update tree with additional backup file! inform user about that
+      this.messagingService.publish(FILES_BACKEDUP, backedUpResources);
+      backedUpMessage = '\nPlease check backups of: '
+        + backedUpResources.map((entry) => entry.resource + '->' + entry.backupResource).join(', ');
+    }
+    if (changedMessage || backedUpMessage) {
+      this.messagingService.publish(SNACKBAR_DISPLAY_NOTIFICATION,
+                                    { message: msgprefix + changedMessage ? changedMessage : ''
+                                      + backedUpMessage ? backedUpMessage : '' });
+    }
+  }
+
+  /** is the given a conflict (returned by any backend action) that indicates a repull? */
+  private isRepullConflict(response: any): boolean {
+    if (this.isHttpErrorResponse(response)) {
+      if (response.status === HTTP_STATUS_CONFLICT) {
+        if (response.error === 'REPULL') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /** wrap the given async funnction in a pull loop that will pull as long as the backend requests pulls
+      before the backend actually executes the expected function */
+  private async wrapActionInPulls(action: (client: HttpClient) => Promise<string | Conflict>): Promise<string | Conflict> {
+    const client = await this.httpProvider.getHttpClient();
+    let result: string | Conflict;
+    let executePullAgain = true;
+    let changedResources = new Array<string>();
+    let  backedUpResources = new Array<BackupEntry>();
+    while (executePullAgain) {
+      executePullAgain = false;
+      const pullResponse = await this.executePull(client);
+      if (!pullResponse.failure) {
+        changedResources = changedResources.concat(pullResponse.changedResources);
+        backedUpResources = backedUpResources.concat(pullResponse.backedUpResources);
+        try {
+          result = await action(client);
+        } catch (errorResponse) {
+          console.log('WARNING: got error on copy');
+          console.log(errorResponse);
+          if (this.isRepullConflict(errorResponse)) {
+            console.log('info: execute pull again');
+            executePullAgain = true;
+          } else {
+            this.informPullChanges(changedResources, backedUpResources);
+            return this.getConflictOrThrowError(errorResponse);
+          }
+        }
+      } else {
+        console.error('unexpected error during pull');
+        console.log(pullResponse);
+        this.informPullChanges(changedResources, backedUpResources);
+        throw new Error('pull failure');
+      }
+    }
+    this.informPullChanges(changedResources, backedUpResources);
+    return result;
+  }
+
   /** copy either a file to its new location (new location is the new filename),
       or copy whole directories (newPath is the path to the new directory to be created) */
   async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.post(this.getCopyURL(newPath, sourcePath), '', { observe: 'response', responseType: 'text'}).toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
-    }
+    return this.wrapActionInPulls(async (client) =>
+                                  (await client.post(this.getCopyURL(newPath, sourcePath), '',
+                                                     { observe: 'response', responseType: 'text'})
+                                   .toPromise()).body);
   }
 
   async renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.put(this.getRenameURL(oldPath), newPath, { observe: 'response', responseType: 'text'}).toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
-    }
+    return this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.put(this.getRenameURL(oldPath), newPath,
+                                                    { observe: 'response', responseType: 'text'})
+                                   .toPromise()).body);
   }
 
   async deleteResource(path: string): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    try {
-      return (await client.delete(this.getURL(path), { observe: 'response', responseType: 'text'}).toPromise()).body;
-    } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
-    }
+    return this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.delete(this.getURL(path), { observe: 'response', responseType: 'text'})
+                                   .toPromise()).body);
   }
 
   async createResource(path: string, type: ElementType): Promise<string | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
+    return this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.post(this.getURL(path), '',
+                                                     { observe: 'response', responseType: 'text', params: { type: type } })
+                                   .toPromise()).body);
+  }
+
+  private async executePull(httpClient?: HttpClient): Promise<PullResponse> {
+    const client = httpClient ? httpClient : await this.httpProvider.getHttpClient();
     try {
-      return (await client.post(this.getURL(path), '', { observe: 'response', responseType: 'text', params: { type: type } })
-        .toPromise()).body;
+      return (await client.post(this.getPullURL(),
+                                { resources: Array.from(this.openNonDirtyTabs), dirtyResources: Array.from(this.openDirtyTabs) },
+                                { observe: 'response', responseType: 'json' }).toPromise()).body as PullResponse;
     } catch (errorResponse) {
-      return this.getConflictOrThrowError(errorResponse);
+      // TODO: pull must always work, otherwise the local workspace is in deep trouble
+      console.error('could not execute pull', errorResponse);
     }
   }
 
@@ -85,7 +236,11 @@ export class PersistenceService extends AbstractPersistenceService {
   }
 
   private getCopyURL(path: string, sourcePath: string): string {
-    return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath);
+    return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath) + '&clean=true';
+  }
+
+  private getPullURL(): string {
+    return `${this.serviceUrl}/workspace/pull`;
   }
 
   private getURL(path: string): string {

@@ -6,3 +6,10 @@
 // being the workspace tree item ids (the elements' paths), and
 // the values being the summarized validation marker data.
 export const WORKSPACE_MARKER_UPDATE = 'workspace.marker.update';
+
+// Payload is: Array<BackupEntry>
+// BakupEntry {
+//   resource: string        // path / file id
+//   backupResource : string // path / file id
+// }
+export const FILES_BACKEDUP = 'files.backedup';

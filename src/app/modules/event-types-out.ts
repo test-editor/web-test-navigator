@@ -5,6 +5,12 @@ export const HTTP_CLIENT_NEEDED = 'httpClient.needed';
 export const NAVIGATION_DELETED = 'navigation.deleted';
 export const NAVIGATION_CREATED = 'navigation.created';
 export const NAVIGATION_RENAMED = 'navigation.renamed';
+export interface NavigationRenamedPayload {
+  oldPath: string;
+  newPath: string;
+}
+
+
 export const NAVIGATION_OPEN = 'navigation.open';
 export const NAVIGATION_SELECT = 'navigation.select';
 
@@ -21,3 +27,6 @@ export interface SnackbarMessage {
   timeout?: number;
 }
 export const SNACKBAR_DISPLAY_NOTIFICATION = 'snackbar.display.notification';
+
+// payload is: Array<string> (path id of resource)
+export const FILES_CHANGED = 'files.changed';
