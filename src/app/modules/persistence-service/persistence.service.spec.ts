@@ -205,7 +205,7 @@ describe('PersistenceService', () => {
       // then
       .then((result) => {
         expect(result).toEqual(expectedConflict);
-      }, (response) => {
+      }, (error) => {
         fail('expect conflict to be remapped to regular response!');
       });
       tick();
