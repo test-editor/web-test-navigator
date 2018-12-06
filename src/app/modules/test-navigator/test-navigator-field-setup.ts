@@ -29,15 +29,24 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
   };
 
   private readonly activityMarkerSetup = {
-      condition: (node: TestNavigatorTreeNode) => node && (node.type === ElementType.File || !node.expanded),
+      condition: (node: TestNavigatorTreeNode) => node != null,
       states: [{
-        condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly(UserActivityType.EXECUTED_TEST),
+        condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly(UserActivityType.EXECUTED_TEST, this.showOwnOrAll(node)),
         cssClasses: this.userActivityStyles.getCssClasses(UserActivityType.EXECUTED_TEST),
-        label: (node: TestNavigatorTreeNode) =>
-          this.userActivityLabeler.getLabel(node.activities.getUsers(UserActivityType.EXECUTED_TEST), UserActivityType.EXECUTED_TEST)
+        label: (node: TestNavigatorTreeNode) => this.userActivityLabeler.getLabel(
+          node.activities.getUsers(UserActivityType.EXECUTED_TEST, this.showOwnOrAll(node)),
+          UserActivityType.EXECUTED_TEST, node.type === ElementType.Folder)
       }]
     };
 
   fields = [this.validationMarkerSetup, this.activityMarkerSetup];
+
+  private showOwnOrAll(node: TestNavigatorTreeNode): string {
+    if (node.type === ElementType.Folder && node.expanded) {
+      return node.id;
+    } else {
+      return undefined;
+    }
+  }
 
 }

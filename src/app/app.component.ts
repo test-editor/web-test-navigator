@@ -16,7 +16,7 @@ export class AppComponent implements AfterContentChecked {
     this.messageBus.publish(USER_ACTIVITY_UPDATED, [
       {element: 'src/test/java/package/TestCase.tcl', activities: [{
         user: 'John Doe',
-        type: 'executedTest'}]
+        type: 'executed.test'}]
       }] as ElementActivity[]);
   }
 }
