@@ -28,5 +28,5 @@ export interface SnackbarMessage {
 }
 export const SNACKBAR_DISPLAY_NOTIFICATION = 'snackbar.display.notification';
 
-// payload is: Array<string> (path id of resource)
+export interface FilesChangedPayload extends Array<string> {}
 export const FILES_CHANGED = 'files.changed';

@@ -6,9 +6,9 @@ import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType, WorkspaceElement } from './workspace-element';
 import { Subscription } from 'rxjs/Subscription';
-import { NAVIGATION_OPEN, NAVIGATION_RENAMED, FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';
+import { NAVIGATION_OPEN, NAVIGATION_RENAMED, FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION, FilesChangedPayload } from '../event-types-out';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
-import { FILES_BACKEDUP } from '../event-types';
+import { FILES_BACKEDUP, BackupEntry, FilesBackedupPayload } from '../event-types';
 import { MessagingService } from '@testeditor/messaging-service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 
@@ -23,11 +23,6 @@ export abstract class AbstractPersistenceService {
   abstract deleteResource(path: string): Promise<string | Conflict>;
   abstract createResource(path: string, type: ElementType): Promise<string | Conflict>;
   abstract getBinaryResource(path: string): Promise<Blob>;
-}
-
-export interface BackupEntry {
-  resource: string;
-  backupResource: string;
 }
 
 export interface PullResponse {
@@ -49,7 +44,7 @@ export class PersistenceService extends AbstractPersistenceService {
 
   startSubscriptions(): void {
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (treeNode: TestNavigatorTreeNode) => {
-      this.log('navigation open:'); console.log(treeNode);
+      this.log('navigation open:', treeNode);
       this.openNonDirtyTabs.add(treeNode.id);
     }));
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
@@ -57,14 +52,14 @@ export class PersistenceService extends AbstractPersistenceService {
       this.openDirtyTabs.clear();
     }));
     this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_RENAMED, (payload) => {
+      this.log('navigation rename:', payload);
       if (this.openNonDirtyTabs.delete(payload.oldPath)) {
         this.openNonDirtyTabs.add(payload.newPath);
       } else if (this.openDirtyTabs.delete(payload.oldPath)) {
         this.openDirtyTabs.add(payload.newPath);
       } else {
         this.log('WARNING: received ' + NAVIGATION_RENAMED
-                    + ' but no corresponding open tab is known within persistence service backend');
-        this.log(payload);
+                 + ' but no corresponding open tab is known within persistence service backend:', payload);
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
@@ -73,8 +68,7 @@ export class PersistenceService extends AbstractPersistenceService {
       const removedDirty = this.openDirtyTabs.delete(payload.id);
       if (!(removedDirty || removedNonDirty)) {
         this.log('WARNING: received ' + EDITOR_CLOSE
-                    + ' but no corresponding open tab is known within persistence service backend');
-        this.log(payload);
+                 + ' but no corresponding open tab is known within persistence service backend:', payload);
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload: EditorDirtyChangedPayload) => {
@@ -88,7 +82,7 @@ export class PersistenceService extends AbstractPersistenceService {
       }
     }));
     this.subscriptions.push(this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
-      this.log('save completed:'); this.log(payload);
+      this.log('save completed:', payload);
       if (this.openDirtyTabs.delete(payload.id)) {
           this.openNonDirtyTabs.add(payload.id);
       } else {
@@ -120,7 +114,7 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
-  private informPullChanges(changedResources: Array<string>, backedUpResources: Array<BackupEntry>): void {
+  private informPullChanges(changedResources: FilesChangedPayload, backedUpResources: FilesBackedupPayload): void {
     this.log('inform about pull changes (if any) with changedResources:', changedResources);
     this.log('..and backedUpResources:', backedUpResources);
     const shortMessage = (changedResources.length + backedUpResources.length)
@@ -277,7 +271,7 @@ export class PersistenceService extends AbstractPersistenceService {
 
   private log(msg: String, ...payloads: any[]) {
     if (isDevMode()) {
-      console.log('TestNavigatorComponent: ' + msg);
+      console.log('TestNavigator.PersistenceService: ' + msg);
       if (payloads) {
         payloads.forEach((payload) => console.log(payload));
       }
