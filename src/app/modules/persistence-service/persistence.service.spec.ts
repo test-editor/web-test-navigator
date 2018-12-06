@@ -5,8 +5,9 @@ import { MessagingModule, MessagingService } from '@testeditor/messaging-service
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
-import { PersistenceService, BackupEntry } from './persistence.service';
+import { PersistenceService } from './persistence.service';
 import { ElementType } from './workspace-element';
+import { BackupEntry } from '../event-types';
 
 describe('PersistenceService', () => {
   let serviceConfig: PersistenceServiceConfig;
@@ -151,8 +152,8 @@ describe('PersistenceService', () => {
       persistenceService.startSubscriptions();
 
       // when
-      messagingService.publish('navigation.open', 'some/file/closed');
-      messagingService.publish('navigation.open', 'some/open-file');
+      messagingService.publish('navigation.open', { id: 'some/file/closed' });
+      messagingService.publish('navigation.open', { id: 'some/open-file' });
       messagingService.publish('editor.dirtyStateChanged', { path: 'yet/another/closed', dirty: true });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/a-file/no-longer-dirty', dirty: true });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/still/a-file/no-longer-dirty', dirty: true });
@@ -177,9 +178,9 @@ describe('PersistenceService', () => {
       persistenceService.startSubscriptions();
 
       // when
-      messagingService.publish('navigation.open', 'some/file');
-      messagingService.publish('navigation.open', 'some/other/file');
-      messagingService.publish('navigation.open', 'some/other/file');
+      messagingService.publish('navigation.open', { id: 'some/file' });
+      messagingService.publish('navigation.open', { id: 'some/other/file' });
+      messagingService.publish('navigation.open', { id: 'some/other/file' });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
       persistenceService.copyResource('any', 'file'); // could be any other action that executes a pull
