@@ -15,6 +15,7 @@ export class TestNavigatorTreeNode implements TreeNode {
     'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color'
   };
 
+  private _activities = UserActivitySet.EMPTY_SET;
   private _children: TestNavigatorTreeNode[];
   private _validation = ValidationMarkerSummary.zero;
   collapsedCssClasses = 'fas fa-chevron-right';
@@ -23,7 +24,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   expanded = undefined;
   parent: TestNavigatorTreeNode;
   dirty = false;
-  activities = UserActivitySet.EMPTY_SET;
+
 
   constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
     if (workspaceElement.type === ElementType.Folder) {
@@ -84,6 +85,14 @@ export class TestNavigatorTreeNode implements TreeNode {
 
   get id(): string {
     return this.workspaceElement.path;
+  }
+
+  get activities(): UserActivitySet {
+    return this._activities;
+  }
+
+  set activities(value: UserActivitySet) {
+    this._activities = value;
   }
 
   get validation(): ValidationMarkerSummary {
