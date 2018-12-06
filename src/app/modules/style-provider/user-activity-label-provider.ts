@@ -1,12 +1,12 @@
 import { UserActivityType } from './user-activity-type';
 
 export abstract class UserActivityLabelProvider {
-  abstract getLabel(users: string[], activityType: string): string;
+  abstract getLabel(users: string[], activityType: string, element?: string): string;
 }
 
 export class DefaultUserActivityLabelProvider extends UserActivityLabelProvider {
-  getLabel(users: string[], activityType: string): string {
-    return this.userString(users) + this.activityString(activityType, users.length < 2);
+  getLabel(users: string[], activityType: string, element?: string): string {
+    return this.userString(users) + ' ' + this.activityString(activityType, users.length < 2, element);
   }
 
   private userString(users: string[]): string {
@@ -18,10 +18,10 @@ export class DefaultUserActivityLabelProvider extends UserActivityLabelProvider 
     }
   }
 
-  private activityString(type: string, singular: boolean) {
+  private activityString(type: string, singular: boolean, element?: string) {
     switch (type) {
-      case UserActivityType.EXECUTED_TEST: return (singular ? ' is ' : ' are ') + 'executing this test';
-      default: return (singular ? ' is ' : ' are ') + 'working on this';
+      case UserActivityType.EXECUTED_TEST: return `${singular ? 'is' : 'are'} executing ${element ? element : 'this test'}`;
+      default: return `${singular ? 'is' : 'are'} working on ${element ? element : 'this'}`;
     }
   }
 
