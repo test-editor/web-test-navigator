@@ -11,5 +11,5 @@ export interface BackupEntry {
   resource: string;       // path / file id
   backupResource: string; // path / file id
 }
-export interface FilesBackedupPayload extends Array<BackupEntry> {}
+export type FilesBackedupPayload = BackupEntry[];
 export const FILES_BACKEDUP = 'files.backedup';
