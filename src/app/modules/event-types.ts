@@ -7,9 +7,9 @@
 // the values being the summarized validation marker data.
 export const WORKSPACE_MARKER_UPDATE = 'workspace.marker.update';
 
-// Payload is: Array<BackupEntry>
-// BakupEntry {
-//   resource: string        // path / file id
-//   backupResource : string // path / file id
-// }
+export interface BackupEntry {
+  resource: string;       // path / file id
+  backupResource: string; // path / file id
+}
+export type FilesBackedupPayload = BackupEntry[];
 export const FILES_BACKEDUP = 'files.backedup';
