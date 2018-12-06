@@ -45,8 +45,6 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   private treeSelectionChangeSubscription: Subscription;
   private treeDeselectionChangeSubscription: Subscription;
-  private testExecutionSubscription: Subscription;
-  private testExecutionFailedSubscription: Subscription;
   private userActivitySubscription: Subscription;
   private openFilesSubscriptions = new SubscriptionMap<TestNavigatorTreeNode>();
 
@@ -99,15 +97,15 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     this.updateModel();
     this.setupTreeSelectionChangeListener();
     this.setupUserActivityChangeListener();
+    this.persistenceService.startSubscriptions();
   }
 
   ngOnDestroy(): void {
     this.treeDeselectionChangeSubscription.unsubscribe();
     this.treeSelectionChangeSubscription.unsubscribe();
-    this.testExecutionSubscription.unsubscribe();
-    this.testExecutionFailedSubscription.unsubscribe();
     this.userActivitySubscription.unsubscribe();
     this.openFilesSubscriptions.clear();
+    this.persistenceService.stopSubscriptions();
   }
 
   private setupTreeSelectionChangeListener() {
