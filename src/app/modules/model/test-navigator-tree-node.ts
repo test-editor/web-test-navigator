@@ -1,7 +1,7 @@
 import { isDevMode } from '@angular/core';
 import { TreeNode } from '@testeditor/testeditor-commons';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
-import { UserActivitySet } from '../test-navigator/user-activity-set';
+import { CompositeUserActivitySet, EMPTY_USER_ACTIVITY_SET, UserActivitySet } from '../test-navigator/user-activity-set';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
 export class TestNavigatorTreeNode implements TreeNode {
@@ -15,6 +15,7 @@ export class TestNavigatorTreeNode implements TreeNode {
     'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color'
   };
 
+  private _activities = new CompositeUserActivitySet();
   private _children: TestNavigatorTreeNode[];
   private _validation = ValidationMarkerSummary.zero;
   collapsedCssClasses = 'fas fa-chevron-right';
@@ -23,7 +24,7 @@ export class TestNavigatorTreeNode implements TreeNode {
   expanded = undefined;
   parent: TestNavigatorTreeNode;
   dirty = false;
-  activities = UserActivitySet.EMPTY_SET;
+
 
   constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
     if (workspaceElement.type === ElementType.Folder) {
@@ -34,6 +35,7 @@ export class TestNavigatorTreeNode implements TreeNode {
     } else {
       this.parent = parent;
     }
+    this._activities.set(this.id, EMPTY_USER_ACTIVITY_SET);
   }
 
   setVisible(showNotHide: boolean): void {
@@ -84,6 +86,21 @@ export class TestNavigatorTreeNode implements TreeNode {
 
   get id(): string {
     return this.workspaceElement.path;
+  }
+
+  get activities(): UserActivitySet {
+    return this._activities;
+  }
+
+  set activities(value: UserActivitySet) {
+      this.updateParentActivities(this.id, value);
+  }
+
+  private updateParentActivities(element: string, uaSet: UserActivitySet) {
+    this._activities.set(element, uaSet);
+    if (this.parent && !this.isFiltered()) {
+      this.parent.updateParentActivities(element, uaSet);
+    }
   }
 
   get validation(): ValidationMarkerSummary {

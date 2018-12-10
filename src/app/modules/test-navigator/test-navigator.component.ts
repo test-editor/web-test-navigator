@@ -1,11 +1,11 @@
 import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
-         TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED
-       } from '@testeditor/testeditor-commons';
+  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
-import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED,
-  USER_ACTIVITY_UPDATED, ElementActivity, UserActivityData } from '../event-types-in';
+import { WORKSPACE_MARKER_UPDATE } from '../event-types';
+import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, ElementActivity, UserActivityData,
+  USER_ACTIVITY_UPDATED } from '../event-types-in';
 import { NAVIGATION_CREATED, NAVIGATION_DELETED, NAVIGATION_OPEN, NAVIGATION_RENAMED, SNACKBAR_DISPLAY_NOTIFICATION, TEST_SELECTED,
   WORKSPACE_RETRIEVED, WORKSPACE_RETRIEVED_FAILED } from '../event-types-out';
 import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
@@ -20,8 +20,7 @@ import { ValidationMarkerService } from '../validation-marker-service/validation
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 import { FilenameValidator } from './filename-validator';
 import { SubscriptionMap } from './subscription-map';
-import { UserActivitySet } from './user-activity-set';
-import { WORKSPACE_MARKER_UPDATE } from '../event-types';
+import { AtomicUserActivitySet, EMPTY_USER_ACTIVITY_SET } from './user-activity-set';
 
 export type ClipType = 'cut' | 'copy' | null;
 
@@ -135,9 +134,9 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
       this.model.forEach((node) => {
         if (activitiesMap.has(node.id)) {
-          node.activities = new UserActivitySet(activitiesMap.get(node.id));
+          node.activities = new AtomicUserActivitySet(activitiesMap.get(node.id));
         } else {
-          node.activities = UserActivitySet.EMPTY_SET;
+          node.activities = EMPTY_USER_ACTIVITY_SET;
         }
       });
     });

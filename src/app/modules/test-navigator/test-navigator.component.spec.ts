@@ -1,30 +1,30 @@
-import { async, ComponentFixture, fakeAsync, flush, TestBed, tick, inject } from '@angular/core/testing';
+import { async, ComponentFixture, fakeAsync, flush, inject, TestBed, tick } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
-import { IndicatorFieldSetup, TreeViewerModule, TREE_NODE_RENAME_SELECTED, InputBoxConfig } from '@testeditor/testeditor-commons';
+import { HttpProviderService, IndicatorFieldSetup, InputBoxConfig, TreeViewerModule,
+  TREE_NODE_RENAME_SELECTED } from '@testeditor/testeditor-commons';
 import { ButtonsModule } from 'ngx-bootstrap/buttons';
-import { instance, mock, when, verify, anyString, anything } from 'ts-mockito/lib/ts-mockito';
-import { EDITOR_DIRTY_CHANGED, EDITOR_CLOSE, USER_ACTIVITY_UPDATED, ElementActivity } from '../event-types-in';
+import { anyString, anything, instance, mock, verify, when } from 'ts-mockito/lib/ts-mockito';
+import { WORKSPACE_MARKER_UPDATE } from '../event-types';
+import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, ElementActivity, USER_ACTIVITY_UPDATED } from '../event-types-in';
 import { FilterBarComponent } from '../filter-bar/filter-bar.component';
-import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { IndexService } from '../index-service/index.service';
+import { XtextIndexService } from '../index-service/xtext-index.service';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
+import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
+import { DefaultUserActivityLabelProvider, UserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
+import { UserActivityType } from '../style-provider/user-activity-type';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
+import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
+import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
 import { FilenameValidator } from './filename-validator';
 import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
-import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
-import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
-import { XtextIndexService } from '../index-service/xtext-index.service';
-import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { WORKSPACE_MARKER_UPDATE } from '../event-types';
-import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
-import { UserActivityLabelProvider, DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
-import { UserActivitySet } from './user-activity-set';
-import { UserActivityType } from '../style-provider/user-activity-type';
+import { AtomicUserActivitySet } from './user-activity-set';
 
 describe('TestNavigatorComponent', () => {
   let component: TestNavigatorComponent;
@@ -970,7 +970,6 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
 
     // then
-    expect(component.model.activities.hasOnly('deletedElement')).toBeTruthy();
     expect(component.model.activities.getUsers('deletedElement').length).toEqual(1);
     expect(component.model.activities.getUsers('deletedElement')).toContain('Jane Doe');
     expect(tclFile.activities.getTypes().length).toEqual(2);
@@ -1010,7 +1009,7 @@ describe('TestNavigatorComponent', () => {
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
     await component.updateModel();
     const tclFile = component.model.children[1];
-    tclFile.activities = new UserActivitySet([{ user: 'John Doe', type: UserActivityType.EXECUTED_TEST}]);
+    tclFile.activities = new AtomicUserActivitySet([{ user: 'John Doe', type: UserActivityType.EXECUTED_TEST}]);
     fixture.detectChanges();
     let testTclUserActivityIcon = fixture.debugElement.query(By.css(
       'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));

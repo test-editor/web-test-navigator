@@ -1,7 +1,8 @@
-import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
-import { TestNavigatorTreeNode } from './test-navigator-tree-node';
 import { forEach } from '@testeditor/testeditor-commons';
+import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
+import { AtomicUserActivitySet } from '../test-navigator/user-activity-set';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
+import { TestNavigatorTreeNode } from './test-navigator-tree-node';
 
 describe('TestNavigatorTreeNode', () => {
   it('should create an instance', () => {
@@ -267,4 +268,22 @@ describe('TestNavigatorTreeNode', () => {
     // then
     expect(treeNode.validation).toEqual(jasmine.objectContaining({ errors: 1, warnings: 2, infos: 3 }));
   });
+
+  it('updates parents when setting user activities', () => {
+    // given
+    const treeNode = new TestNavigatorTreeNode (
+      { name: 'root', path: 'path/to/root', type: ElementType.Folder, children: [
+        { name: 'child', path: 'path/to/root/child', type: ElementType.File, children: [] }
+      ]}, null
+    );
+
+    // when
+    treeNode.children[0].activities = new AtomicUserActivitySet([{type: 'executed.test', user: 'john.doe'}]);
+
+    // then
+    expect(treeNode.activities.getUsers('executed.test')).toContain('john.doe');
+    expect(treeNode.activities.getTypes()).toContain('executed.test');
+    expect(treeNode.activities.hasOnly('executed.test')).toBeTruthy();
+  });
+
 });
