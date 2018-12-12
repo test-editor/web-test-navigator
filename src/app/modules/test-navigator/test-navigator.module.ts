@@ -10,15 +10,17 @@ import { IndexServiceConfig } from '../index-service/index.service.config';
 import { XtextIndexService } from '../index-service/xtext-index.service';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { PersistenceServiceConfig } from '../persistence-service/persistence.service.config';
+import { DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
+import { DefaultUserActivityStyleProvider } from '../style-provider/user-activity-style-provider';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { ValidationMarkerServiceConfig } from '../validation-marker-service/validation-marker.service.config';
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 import { FilenameValidator } from './filename-validator';
-import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
+import { TestNavigatorFieldSetup, TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER,
+  TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER,
+  TEST_NAVIGATOR_USER_ACTIVITY_LIST} from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
-import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
-import { UserActivityLabelProvider, DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
 
 @NgModule({
   imports: [
@@ -49,8 +51,9 @@ export class TestNavigatorModule {
         { provide: IndexServiceConfig, useValue: indexConfig },
         { provide: ValidationMarkerServiceConfig, useValue: validationConfig },
         { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup },
-        { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
-        { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
+        { provide: TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER, useClass: DefaultUserActivityStyleProvider },
+        { provide: TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, useClass: DefaultUserActivityLabelProvider },
+        { provide: TEST_NAVIGATOR_USER_ACTIVITY_LIST, useValue: [] }
       ]
     };
   }

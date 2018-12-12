@@ -10,10 +10,12 @@ import { IndexServiceConfig } from './modules/index-service/index.service.config
 import { XtextIndexService } from './modules/index-service/xtext-index.service';
 import { PersistenceService } from './modules/persistence-service/persistence.service';
 import { PersistenceServiceConfig } from './modules/persistence-service/persistence.service.config';
-import { StyleProvider, TestNavigatorDefaultStyleProvider } from './modules/style-provider/style-provider';
-import { DefaultUserActivityLabelProvider, UserActivityLabelProvider } from './modules/style-provider/user-activity-label-provider';
+import { DefaultUserActivityLabelProvider } from './modules/style-provider/user-activity-label-provider';
+import { DefaultUserActivityStyleProvider } from './modules/style-provider/user-activity-style-provider';
 import { FilenameValidator } from './modules/test-navigator/filename-validator';
-import { TestNavigatorFieldSetup } from './modules/test-navigator/test-navigator-field-setup';
+import { TestNavigatorFieldSetup, TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER,
+  TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER,
+  TEST_NAVIGATOR_USER_ACTIVITY_LIST} from './modules/test-navigator/test-navigator-field-setup';
 import { TestNavigatorComponent } from './modules/test-navigator/test-navigator.component';
 import { TreeFilterService } from './modules/tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
@@ -46,8 +48,9 @@ describe('AppComponent', () => {
         { provide: IndexServiceConfig, useValue: indexServiceConfig  },
         { provide: ValidationMarkerServiceConfig, useValue: validationServiceConfig },
         { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup },
-        { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
-        { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
+        { provide: TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER, useClass: DefaultUserActivityStyleProvider },
+        { provide: TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, useClass: DefaultUserActivityLabelProvider },
+        { provide: TEST_NAVIGATOR_USER_ACTIVITY_LIST, useValue: [] }
       ]
     }).compileComponents();
   }));
