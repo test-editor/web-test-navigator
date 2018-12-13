@@ -955,6 +955,7 @@ describe('TestNavigatorComponent', () => {
 
   it('updates tree with collaborator activities on receiving USER_ACTIVITY_UPDATED',
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
     await component.updateModel();
     const tclFile = component.model.children[1];
     const collaboratorActivities: ElementActivity[] = [
@@ -986,6 +987,7 @@ describe('TestNavigatorComponent', () => {
 
   it('shows icons and tooltip to indicate collaborator activities on receiving USER_ACTIVITY_UPDATED',
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
     await component.updateModel();
     const collaboratorActivities: ElementActivity[] = [
       {element: 'src/test/java/test.tcl', activities: [
@@ -1009,6 +1011,7 @@ describe('TestNavigatorComponent', () => {
 
   it('removes user activity icon when received USER_ACTIVITY_UPDATED event does not include that activity anymore',
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
     await component.updateModel();
     const tclFile = component.model.children[1];
     tclFile.activities = new AtomicUserActivitySet([{ user: 'John Doe', type: SAMPLE_ACTIVITY}]);
@@ -1037,6 +1040,49 @@ describe('TestNavigatorComponent', () => {
       expect(testTclUserActivityIcon.nativeElement.classList).not.toContain('fa-cog');
       expect(testTclUserActivityIcon.nativeElement.classList).not.toContain('user-activity');
       expect(testTclUserActivityIcon.nativeElement.title).toBeFalsy();
+  })));
+
+  it('puts collaborator activities into parent nodes if the actual node does not exist',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    const subfolder = component.model.children[0];
+    const collaboratorActivities: ElementActivity[] = [{
+      element: 'src/test/java/subfolder/newfolder/newfile.ext', activities: [{user: 'Jane Doe', type: 'created.file'}]
+    }];
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
+    tick();
+    fixture.detectChanges();
+
+    // then
+    expect(component.model.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext')).toContain('created.file');
+    expect(component.model.activities.getUsers('created.file')).toContain('Jane Doe');
+    expect(subfolder.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext')).toContain('created.file');
+    expect(subfolder.activities.getUsers('created.file', 'src/test/java/subfolder/newfolder/newfile.ext')).toContain('Jane Doe');
+  })));
+
+  it('removes collaborator activities on non-existing nodes from parent nodes when update does not contain them anymore',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    const subfolder = component.model.children[0];
+    const collaboratorActivities: ElementActivity[] = [{
+      element: 'src/test/java/subfolder/newfolder/newfile.ext', activities: [{user: 'Jane Doe', type: 'created.file'}]
+    }];
+    messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
+    tick();
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, []);
+    tick();
+
+    // then
+    expect(component.model.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
+    expect(component.model.activities.getUsers('created.file').length).toEqual(0);
+    expect(subfolder.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
+    expect(subfolder.activities.getUsers('created.file', 'src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
   })));
 
 });

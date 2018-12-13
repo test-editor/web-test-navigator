@@ -48,13 +48,21 @@ export class CompositeUserActivitySet implements UserActivitySet {
 
   constructor() {}
 
+  clear() {
+    this.elementActivityMap.clear();
+  }
+
   set(element: string, uaSet: UserActivitySet) {
     this.elementActivityMap.set(element, uaSet);
   }
 
   getUsers(type: string, element?: string): string[] {
     if (element) {
-      return this.elementActivityMap.get(element).getUsers(type);
+      if (this.elementActivityMap.has(element)) {
+        return this.elementActivityMap.get(element).getUsers(type);
+      } else {
+        return [];
+      }
     } else {
     return [].concat(...this.children.map((uaSet) => uaSet.getUsers(type))).filter(this.unique);
     }
@@ -62,7 +70,11 @@ export class CompositeUserActivitySet implements UserActivitySet {
 
   getTypes(element?: string): string[] {
     if (element) {
-      return this.elementActivityMap.get(element).getTypes();
+      if (this.elementActivityMap.has(element)) {
+        return this.elementActivityMap.get(element).getTypes();
+      } else {
+        return [];
+      }
     } else {
       return [].concat(...this.children.map((uaSet) => uaSet.getTypes())).filter(this.unique);
     }

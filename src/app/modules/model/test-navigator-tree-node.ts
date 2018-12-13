@@ -93,13 +93,14 @@ export class TestNavigatorTreeNode implements TreeNode {
   }
 
   set activities(value: UserActivitySet) {
-      this.updateParentActivities(this.id, value);
+    this._activities.clear();
+    this.setDescendantActivity(this.id, value);
   }
 
-  private updateParentActivities(element: string, uaSet: UserActivitySet) {
+  setDescendantActivity(element: string, uaSet: UserActivitySet): any {
     this._activities.set(element, uaSet);
     if (this.parent && !this.isFiltered()) {
-      this.parent.updateParentActivities(element, uaSet);
+      this.parent.setDescendantActivity(element, uaSet);
     }
   }
 
