@@ -26,7 +26,7 @@ import { TestNavigatorFieldSetup, TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, T
 import { TestNavigatorComponent } from './test-navigator.component';
 import { AtomicUserActivitySet } from './user-activity-set';
 
-describe('TestNavigatorComponent', () => {
+fdescribe('TestNavigatorComponent', () => {
   const SAMPLE_ACTIVITY = 'sample.activity';
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
@@ -1085,4 +1085,50 @@ describe('TestNavigatorComponent', () => {
     expect(subfolder.activities.getUsers('created.file', 'src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
   })));
 
+
+  it('shows icon and tooltip on parent when no closer ancestor node is visible',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    const collaboratorActivities: ElementActivity[] = [
+      {element: 'src/test/java/newDir/newFile.tcl', activities: [{ user: 'John Doe', type: SAMPLE_ACTIVITY}]}
+    ];
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
+    tick();
+    fixture.detectChanges();
+
+    // then
+    const workspaceRootActivityIcon = fixture.debugElement.query(By.css(
+      'div.indicator-boxes > div:nth-child(2) > app-indicator-box > div'));
+    expect(workspaceRootActivityIcon.nativeElement.classList).toContain('fa');
+    expect(workspaceRootActivityIcon.nativeElement.classList).toContain('fa-user');
+    expect(workspaceRootActivityIcon.nativeElement.classList).toContain('user-activity');
+    expect(workspaceRootActivityIcon.nativeElement.title).toEqual('one or more collaborators are currently working on this');
+  })));
+
+  it('does not show icon and tooltip on parent when closer ancestor node is visible',
+  fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    const collaboratorActivities: ElementActivity[] = [
+      {element: 'src/test/java/subfolder/file-with-closer-ancestor.tcl', activities: [{ user: 'John Doe', type: SAMPLE_ACTIVITY}]}
+    ];
+
+    // when
+    messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
+    tick();
+    fixture.detectChanges();
+
+    // then
+    const workspaceRootActivityIcon = fixture.debugElement.query(By.css(
+      'div.indicator-boxes > div:nth-child(2) > app-indicator-box > div'));
+    expect(workspaceRootActivityIcon.nativeElement.classList).not.toContain('fa');
+    expect(workspaceRootActivityIcon.nativeElement.classList).not.toContain('fa-user');
+    expect(workspaceRootActivityIcon.nativeElement.classList).not.toContain('user-activity');
+    expect(workspaceRootActivityIcon.nativeElement.title).toBeFalsy();
+  })));
 });

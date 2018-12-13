@@ -1,9 +1,11 @@
 import { UserActivityData } from '../event-types-in';
+import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 
 export interface UserActivitySet {
   getUsers(type: string, element?: string): string[];
   getTypes(element?: string): string[];
   hasOnly(type: string, element?: string): boolean;
+  filterVisibleCloserAncestors(node: TestNavigatorTreeNode): UserActivitySet;
 }
 
 export class AtomicUserActivitySet implements UserActivitySet {
@@ -31,6 +33,10 @@ export class AtomicUserActivitySet implements UserActivitySet {
     return this.activities.has(type) && this.activities.size < 2;
   }
 
+  filterVisibleCloserAncestors(node: TestNavigatorTreeNode): UserActivitySet {
+    return this;
+  }
+
   toString(): string {
     return Array.from(this.activities.values()).map(
       (activitiesSameType) => activitiesSameType.map(
@@ -46,7 +52,11 @@ export const EMPTY_USER_ACTIVITY_SET = new AtomicUserActivitySet([]);
 export class CompositeUserActivitySet implements UserActivitySet {
   private readonly elementActivityMap = new Map<string, UserActivitySet>();
 
-  constructor() {}
+  constructor(initialActivities?: [string, UserActivitySet][]) {
+    if (initialActivities) {
+      initialActivities.forEach((entry) => this.set(entry[0], entry[1]));
+    }
+  }
 
   clear() {
     this.elementActivityMap.clear();
@@ -64,7 +74,7 @@ export class CompositeUserActivitySet implements UserActivitySet {
         return [];
       }
     } else {
-    return [].concat(...this.children.map((uaSet) => uaSet.getUsers(type))).filter(this.unique);
+      return [].concat(...this.children.map((uaSet) => uaSet.getUsers(type))).filter(this.unique);
     }
   }
 
@@ -86,6 +96,14 @@ export class CompositeUserActivitySet implements UserActivitySet {
     }
     const types = this.getTypes();
     return types.length === 1 && types[0] === type;
+  }
+
+  filterVisibleCloserAncestors(node: TestNavigatorTreeNode): UserActivitySet {
+    const treeDepth = node.id.split('/').length;
+    return new CompositeUserActivitySet(Array.from(this.elementActivityMap).filter(([id, uaSet]) => {
+        return id.startsWith(node.id) &&
+          (!node.expanded || node.children.find((child) => child.id === node.id + '/' + id.split('/')[treeDepth]) === undefined);
+    }));
   }
 
   private get children(): UserActivitySet[] {
