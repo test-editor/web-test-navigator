@@ -1,15 +1,16 @@
-import { Injectable } from '@angular/core';
-import { IndicatorFieldSetup } from '@testeditor/testeditor-commons';
+import { Injectable, InjectionToken, Inject } from '@angular/core';
+import { IndicatorFieldSetup, StyleProvider, LabelProvider, Field } from '@testeditor/testeditor-commons';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { ElementType } from '../persistence-service/workspace-element';
-import { StyleProvider } from '../style-provider/style-provider';
-import { UserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
-import { UserActivityType } from '../style-provider/user-activity-type';
+import { UserActivityLabelSubject } from '../style-provider/user-activity-label-provider';
+import { MarkerState } from '@testeditor/testeditor-commons/src/app/modules/widgets/tree-viewer/markers/marker.state';
+
+export const TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER = new InjectionToken<StyleProvider>('');
+export const TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER = new InjectionToken<LabelProvider<UserActivityLabelSubject>>('');
+export const TEST_NAVIGATOR_USER_ACTIVITY_LIST = new InjectionToken<string[]>('');
 
 @Injectable()
 export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
-  constructor(private userActivityStyles: StyleProvider, private userActivityLabeler: UserActivityLabelProvider) {}
-
   private readonly validationMarkerSetup = {
     condition: (node: TestNavigatorTreeNode) => node && (node.type === ElementType.File || !node.expanded),
     states: [{
@@ -28,18 +29,50 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
     }]
   };
 
-  private readonly activityMarkerSetup = {
-      condition: (node: TestNavigatorTreeNode) => node != null,
-      states: [{
-        condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly(UserActivityType.EXECUTED_TEST, this.showOwnOrAll(node)),
-        cssClasses: this.userActivityStyles.getCssClasses(UserActivityType.EXECUTED_TEST),
-        label: (node: TestNavigatorTreeNode) => this.userActivityLabeler.getLabel(
-          node.activities.getUsers(UserActivityType.EXECUTED_TEST, this.showOwnOrAll(node)),
-          UserActivityType.EXECUTED_TEST, node.type === ElementType.Folder)
-      }]
-    };
+  private readonly activityMarkerSetup: Field;
 
-  fields = [this.validationMarkerSetup, this.activityMarkerSetup];
+  private readonly mixedActivityMarkerState: MarkerState = {
+    condition: (node: TestNavigatorTreeNode) => node.activities.getTypes(this.showOwnOrAll(node)).length > 1,
+    cssClasses: this.userActivityStyles.getDefaultCssClasses(),
+    label: (node: TestNavigatorTreeNode) =>
+      node.activities.getTypes(this.showOwnOrAll(node)).map((userActivity) =>
+        this.userActivityLabeler.getLabel({
+          users: node.activities.getUsers(userActivity, this.showOwnOrAll(node)),
+          activityType: userActivity,
+          forChildElement: node.type === ElementType.Folder
+        })
+      ).join('\n')
+  };
+
+  fields: Field[];
+
+  constructor(
+    @Inject(TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER) private userActivityStyles: StyleProvider,
+    @Inject(TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER) private userActivityLabeler: LabelProvider<UserActivityLabelSubject>,
+    @Inject(TEST_NAVIGATOR_USER_ACTIVITY_LIST) userActivityList: string[]) {
+    this.activityMarkerSetup = {
+      condition: (node: TestNavigatorTreeNode) => node != null,
+      states: this.initActivityMarkerStates(userActivityList)
+    };
+    this.fields = [this.validationMarkerSetup, this.activityMarkerSetup];
+  }
+
+  private initActivityMarkerStates(userActivityList: string[]): MarkerState[] {
+    return this.singleActivityMarkerStates(userActivityList).concat(this.mixedActivityMarkerState);
+  }
+
+  private singleActivityMarkerStates(userActivityList: string[]): MarkerState[] {
+    return userActivityList.map((userActivity) => ({
+      condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly(userActivity, this.showOwnOrAll(node)),
+      cssClasses: this.userActivityStyles.getCssClasses(userActivity),
+      label: (node: TestNavigatorTreeNode) => this.userActivityLabeler.getLabel({
+        users: node.activities.getUsers(userActivity, this.showOwnOrAll(node)),
+        activityType: userActivity,
+        forChildElement: node.type === ElementType.Folder
+      })
+    }));
+  }
+
 
   private showOwnOrAll(node: TestNavigatorTreeNode): string {
     if (node.type === ElementType.Folder && node.expanded) {

@@ -6,8 +6,10 @@ import { AppComponent } from './app.component';
 import { IndexServiceMock } from './index.service.mock';
 import { IndexService } from './modules/index-service/index.service';
 import { PersistenceService } from './modules/persistence-service/persistence.service';
-import { StyleProvider, TestNavigatorDefaultStyleProvider } from './modules/style-provider/style-provider';
-import { DefaultUserActivityLabelProvider, UserActivityLabelProvider } from './modules/style-provider/user-activity-label-provider';
+import { DefaultUserActivityLabelProvider } from './modules/style-provider/user-activity-label-provider';
+import { DefaultUserActivityStyleProvider } from './modules/style-provider/user-activity-style-provider';
+import { TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, TEST_NAVIGATOR_USER_ACTIVITY_LIST,
+  TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER } from './modules/test-navigator/test-navigator-field-setup';
 import { TestNavigatorModule } from './modules/test-navigator/test-navigator.module';
 import { ValidationMarkerService } from './modules/validation-marker-service/validation-marker.service';
 import { PersistenceServiceMock } from './persistence.service.mock';
@@ -30,8 +32,9 @@ import { ValidationMarkerServiceMock } from './validation-marker.service.mock';
     {provide: PersistenceService, useClass: PersistenceServiceMock},
     {provide: IndexService, useClass: IndexServiceMock},
     {provide: ValidationMarkerService, useClass: ValidationMarkerServiceMock},
-    { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
-    { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
+    { provide: TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER, useClass: DefaultUserActivityStyleProvider },
+    { provide: TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, useClass: DefaultUserActivityLabelProvider },
+    { provide: TEST_NAVIGATOR_USER_ACTIVITY_LIST, useValue: ['sample.activity'] }
   ],
   bootstrap: [AppComponent]
 })

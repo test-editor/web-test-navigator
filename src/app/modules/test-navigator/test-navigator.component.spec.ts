@@ -14,19 +14,20 @@ import { XtextIndexService } from '../index-service/xtext-index.service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType } from '../persistence-service/workspace-element';
-import { StyleProvider, TestNavigatorDefaultStyleProvider } from '../style-provider/style-provider';
-import { DefaultUserActivityLabelProvider, UserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
-import { UserActivityType } from '../style-provider/user-activity-type';
+import { DefaultUserActivityLabelProvider } from '../style-provider/user-activity-label-provider';
+import { DefaultUserActivityStyleProvider } from '../style-provider/user-activity-style-provider';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';
 import { ValidationMarkerService } from '../validation-marker-service/validation-marker.service';
 import { XtextDefaultValidationMarkerService } from '../validation-marker-service/xtext-default-validation-marker.service';
 import { ValidationMarkerData } from '../validation-marker-summary/validation-marker-summary';
 import { FilenameValidator } from './filename-validator';
-import { TestNavigatorFieldSetup } from './test-navigator-field-setup';
+import { TestNavigatorFieldSetup, TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, TEST_NAVIGATOR_USER_ACTIVITY_LIST,
+  TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
 import { AtomicUserActivitySet } from './user-activity-set';
 
 describe('TestNavigatorComponent', () => {
+  const SAMPLE_ACTIVITY = 'sample.activity';
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let mockFilenameValidator: FilenameValidator;
@@ -63,8 +64,9 @@ describe('TestNavigatorComponent', () => {
                   { provide: IndexService, useValue: instance(mockIndexService) },
                   { provide: ValidationMarkerService, useValue: instance(mockValidationService) },
                   { provide: IndicatorFieldSetup, useClass: TestNavigatorFieldSetup },
-                  { provide: StyleProvider, useClass: TestNavigatorDefaultStyleProvider },
-                  { provide: UserActivityLabelProvider, useClass: DefaultUserActivityLabelProvider }
+                  { provide: TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER, useClass: DefaultUserActivityStyleProvider },
+                  { provide: TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, useClass: DefaultUserActivityLabelProvider },
+                  { provide: TEST_NAVIGATOR_USER_ACTIVITY_LIST, useValue: [SAMPLE_ACTIVITY] }
                 ]
     })
       .compileComponents();
@@ -987,8 +989,8 @@ describe('TestNavigatorComponent', () => {
     await component.updateModel();
     const collaboratorActivities: ElementActivity[] = [
       {element: 'src/test/java/test.tcl', activities: [
-        { user: 'John Doe', type: UserActivityType.EXECUTED_TEST},
-        { user: 'Jane Doe', type: UserActivityType.EXECUTED_TEST}]
+        { user: 'John Doe', type: SAMPLE_ACTIVITY},
+        { user: 'Jane Doe', type: SAMPLE_ACTIVITY}]
       }];
 
     // when
@@ -1000,23 +1002,23 @@ describe('TestNavigatorComponent', () => {
     const testTclUserActivityIcon = fixture.debugElement.query(By.css(
       'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));
     expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa');
-    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa-cog');
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa-user');
     expect(testTclUserActivityIcon.nativeElement.classList).toContain('user-activity');
-    expect(testTclUserActivityIcon.nativeElement.title).toEqual('John Doe and Jane Doe are executing this test');
+    expect(testTclUserActivityIcon.nativeElement.title).toEqual('one or more collaborators are currently working on this');
   })));
 
   it('removes user activity icon when received USER_ACTIVITY_UPDATED event does not include that activity anymore',
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
     await component.updateModel();
     const tclFile = component.model.children[1];
-    tclFile.activities = new AtomicUserActivitySet([{ user: 'John Doe', type: UserActivityType.EXECUTED_TEST}]);
+    tclFile.activities = new AtomicUserActivitySet([{ user: 'John Doe', type: SAMPLE_ACTIVITY}]);
     fixture.detectChanges();
     let testTclUserActivityIcon = fixture.debugElement.query(By.css(
       'div:nth-child(2) div:nth-child(2) > app-tree-viewer .indicator-boxes div:nth-child(2) app-indicator-box > div'));
     expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa');
-    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa-cog');
+    expect(testTclUserActivityIcon.nativeElement.classList).toContain('fa-user');
     expect(testTclUserActivityIcon.nativeElement.classList).toContain('user-activity');
-    expect(testTclUserActivityIcon.nativeElement.title).toEqual('John Doe is executing this test');
+    expect(testTclUserActivityIcon.nativeElement.title).toEqual('one or more collaborators are currently working on this');
 
     const changedActivities: ElementActivity[] = [
       {element: 'src/test/java', activities: [
