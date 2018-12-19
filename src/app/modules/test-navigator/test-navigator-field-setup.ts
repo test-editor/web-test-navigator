@@ -32,12 +32,13 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
   private readonly activityMarkerSetup: Field;
 
   private readonly mixedActivityMarkerState: MarkerState = {
-    condition: (node: TestNavigatorTreeNode) => node.activities.filterVisibleCloserAncestors(node).getTypes().length > 1,
+    condition: (node: TestNavigatorTreeNode) => node.activities
+      .ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node).getTypes().length > 1,
     cssClasses: this.userActivityStyles.getDefaultCssClasses(),
     label: (node: TestNavigatorTreeNode) =>
-      node.activities.filterVisibleCloserAncestors(node).getTypes().map((userActivity) =>
+      node.activities.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node).getTypes().map((userActivity) =>
         this.userActivityLabeler.getLabel({
-          users: node.activities.filterVisibleCloserAncestors(node).getUsers(userActivity),
+          users: node.activities.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node).getUsers(userActivity),
           activityType: userActivity,
           forChildElement: node.type === ElementType.Folder
         })
@@ -63,10 +64,11 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
 
   private singleActivityMarkerStates(userActivityList: string[]): MarkerState[] {
     return userActivityList.map((userActivity) => ({
-      condition: (node: TestNavigatorTreeNode) => node.activities.filterVisibleCloserAncestors(node).hasOnly(userActivity),
+      condition: (node: TestNavigatorTreeNode) => node.activities
+        .ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node).hasOnly(userActivity),
       cssClasses: this.userActivityStyles.getCssClasses(userActivity),
       label: (node: TestNavigatorTreeNode) => this.userActivityLabeler.getLabel({
-        users: node.activities.filterVisibleCloserAncestors(node).getUsers(userActivity),
+        users: node.activities.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node).getUsers(userActivity),
         activityType: userActivity,
         forChildElement: node.type === ElementType.Folder
       })

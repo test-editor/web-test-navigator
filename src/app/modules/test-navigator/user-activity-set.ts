@@ -5,7 +5,7 @@ export interface UserActivitySet {
   getUsers(type: string, element?: string): string[];
   getTypes(element?: string): string[];
   hasOnly(type: string, element?: string): boolean;
-  filterVisibleCloserAncestors(node: TestNavigatorTreeNode): UserActivitySet;
+  ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node: TestNavigatorTreeNode): UserActivitySet;
 }
 
 export class AtomicUserActivitySet implements UserActivitySet {
@@ -33,7 +33,7 @@ export class AtomicUserActivitySet implements UserActivitySet {
     return this.activities.has(type) && this.activities.size < 2;
   }
 
-  filterVisibleCloserAncestors(node: TestNavigatorTreeNode): UserActivitySet {
+  ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node: TestNavigatorTreeNode): UserActivitySet {
     return this;
   }
 
@@ -98,11 +98,24 @@ export class CompositeUserActivitySet implements UserActivitySet {
     return types.length === 1 && types[0] === type;
   }
 
-  filterVisibleCloserAncestors(node: TestNavigatorTreeNode): UserActivitySet {
-    const treeDepth = node.id.split('/').length;
-    return new CompositeUserActivitySet(Array.from(this.elementActivityMap).filter(([id, uaSet]) => {
-        return id.startsWith(node.id) &&
-          (!node.expanded || node.children.find((child) => child.id === node.id + '/' + id.split('/')[treeDepth]) === undefined);
+  /**
+   * Provides a view of the activity set reduced to those associated with this node or with (sub-)nodes
+   * that are not currently visible in the tree.
+   * For example, if the given node is 'root', and the activities include some that are associated with
+   * node 'root/sub-node', then those activities will only be included if that node is currently *not*
+   * visible. The rational is that those activities will be displayed on that sub-node rather than this
+   * one.
+   * @param node a tree node providing the viewpoint for filtering the activities.
+   */
+  ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node: TestNavigatorTreeNode): UserActivitySet {
+    const nodePath = node.id;
+    const nodeDepth = nodePath.split('/').length;
+    return new CompositeUserActivitySet(Array.from(this.elementActivityMap).filter(([activityPath, _]) => {
+        if (node.isAncestorOf(activityPath)) {
+          const closerAncestor = nodePath + '/' + activityPath.split('/')[nodeDepth];
+          return !node.expanded || !node.hasChild(closerAncestor);
+        }
+        return false;
     }));
   }
 

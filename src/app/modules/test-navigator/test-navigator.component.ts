@@ -149,7 +149,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
           pathSegments.pop();
           const ancestorNodeId = pathSegments.join('/');
           if (treeNodeMap.has(ancestorNodeId)) {
-            treeNodeMap.get(ancestorNodeId).setDescendantActivity(nodeId, new AtomicUserActivitySet(activitiesMap.get(nodeId)));
+            treeNodeMap.get(ancestorNodeId).setAncestorsAcitivties(nodeId, new AtomicUserActivitySet(activitiesMap.get(nodeId)));
             break;
           }
         }

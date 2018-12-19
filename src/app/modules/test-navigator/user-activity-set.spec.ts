@@ -6,10 +6,10 @@ describe('CompositeUserActivitySet', () => {
   describe('getTypes', () => {
     it('should return an empty list if the provided element is not known to the set', () => {
       // given
-      const activtySetUnderTest = new CompositeUserActivitySet();
+      const activitySetUnderTest = new CompositeUserActivitySet();
 
       // when
-      const actualTypes = activtySetUnderTest.getTypes('arbitrary unknown element');
+      const actualTypes = activitySetUnderTest.getTypes('arbitrary unknown element');
 
       // then
       expect(actualTypes).toBeTruthy();
@@ -31,8 +31,8 @@ describe('CompositeUserActivitySet', () => {
     });
   });
 
-  describe('filterVisibleCloserAncestors', () => {
-    it('should filter only activities with invalid paths from set if the given node is collapsed', () => {
+  describe('ownAndChildActivitiesWithNoVisibleCloserAncestorNode', () => {
+    it('should filter out only activities with invalid paths from set if the given node is collapsed', () => {
       // given
       const activtySetUnderTest = new CompositeUserActivitySet();
       activtySetUnderTest.set('iam/root', new AtomicUserActivitySet([{type: 'sampleActivity', user: ''}]));
@@ -47,7 +47,7 @@ describe('CompositeUserActivitySet', () => {
       treeNode.expanded = false;
 
       // whwen
-      const actualfilteredSet = activtySetUnderTest.filterVisibleCloserAncestors(treeNode);
+      const actualfilteredSet = activtySetUnderTest.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(treeNode);
 
       // then
       expect(actualfilteredSet.getTypes('iam/root')).toContain('sampleActivity');
@@ -56,7 +56,7 @@ describe('CompositeUserActivitySet', () => {
       expect(actualfilteredSet.getTypes('not/a_valid_child_of/iam/root').length).toEqual(0);
     });
 
-    it('should filter activities that have a closer ancestor node among the children of the given node', () => {
+    it('should filter out activities that have an ancestor node closer to the event node among the children of the given tree node', () => {
       // given
       const activtySetUnderTest = new CompositeUserActivitySet();
       activtySetUnderTest.set('iam/root', new AtomicUserActivitySet([{type: 'sampleActivity', user: ''}]));
@@ -71,7 +71,7 @@ describe('CompositeUserActivitySet', () => {
       treeNode.expanded = true;
 
       // whwen
-      const actualfilteredSet = activtySetUnderTest.filterVisibleCloserAncestors(treeNode);
+      const actualfilteredSet = activtySetUnderTest.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(treeNode);
 
       // then
       expect(actualfilteredSet.getTypes('iam/root')).toContain('sampleActivity');

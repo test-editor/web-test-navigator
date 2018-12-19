@@ -26,7 +26,7 @@ import { TestNavigatorFieldSetup, TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, T
 import { TestNavigatorComponent } from './test-navigator.component';
 import { AtomicUserActivitySet } from './user-activity-set';
 
-fdescribe('TestNavigatorComponent', () => {
+describe('TestNavigatorComponent', () => {
   const SAMPLE_ACTIVITY = 'sample.activity';
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
@@ -1054,11 +1054,11 @@ fdescribe('TestNavigatorComponent', () => {
     // when
     messageBus.publish(USER_ACTIVITY_UPDATED, collaboratorActivities);
     tick();
-    fixture.detectChanges();
 
     // then
     expect(component.model.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext')).toContain('created.file');
     expect(component.model.activities.getUsers('created.file')).toContain('Jane Doe');
+    expect(subfolder.id).toEqual('src/test/java/subfolder');
     expect(subfolder.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext')).toContain('created.file');
     expect(subfolder.activities.getUsers('created.file', 'src/test/java/subfolder/newfolder/newfile.ext')).toContain('Jane Doe');
   })));
@@ -1081,12 +1081,13 @@ fdescribe('TestNavigatorComponent', () => {
     // then
     expect(component.model.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
     expect(component.model.activities.getUsers('created.file').length).toEqual(0);
+    expect(subfolder.id).toEqual('src/test/java/subfolder');
     expect(subfolder.activities.getTypes('src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
     expect(subfolder.activities.getUsers('created.file', 'src/test/java/subfolder/newfolder/newfile.ext').length).toEqual(0);
   })));
 
 
-  it('shows icon and tooltip on parent when no closer ancestor node is visible',
+  it('shows icon and tooltip on parent when no closer ancestor node for the event is visible',
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
     // given
     await component.updateModel();
@@ -1109,7 +1110,7 @@ fdescribe('TestNavigatorComponent', () => {
     expect(workspaceRootActivityIcon.nativeElement.title).toEqual('one or more collaborators are currently working on this');
   })));
 
-  it('does not show icon and tooltip on parent when closer ancestor node is visible',
+  it('does NOT show icon and tooltip on parent when closer ancestor node for the event is visible',
   fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
     // given
     await component.updateModel();

@@ -94,13 +94,13 @@ export class TestNavigatorTreeNode implements TreeNode {
 
   set activities(value: UserActivitySet) {
     this._activities.clear();
-    this.setDescendantActivity(this.id, value);
+    this.setAncestorsAcitivties(this.id, value);
   }
 
-  setDescendantActivity(element: string, uaSet: UserActivitySet): any {
-    this._activities.set(element, uaSet);
+  setAncestorsAcitivties(elementKey: string, uaSet: UserActivitySet): void {
+    this._activities.set(elementKey, uaSet);
     if (this.parent && !this.isFiltered()) {
-      this.parent.setDescendantActivity(element, uaSet);
+      this.parent.setAncestorsAcitivties(elementKey, uaSet);
     }
   }
 
@@ -142,6 +142,14 @@ export class TestNavigatorTreeNode implements TreeNode {
 
     }
     return this._children;
+  }
+
+  hasChild(id: string): boolean {
+    return this.children && this.children.some((child) => child.id === id);
+  }
+
+  isAncestorOf(id: string): boolean {
+    return id.startsWith(this.id);
   }
 
   addChild(rawElement: WorkspaceElement): TestNavigatorTreeNode {
