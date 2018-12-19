@@ -11,11 +11,31 @@ import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_C
 import { FILES_BACKEDUP, BackupEntry, FilesBackedupPayload } from '../event-types';
 import { MessagingService } from '@testeditor/messaging-service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
+import { PullActionProtocol } from './pull-action-protocol.service';
 
 
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_CONFLICT = 409;
 export const HTTP_HEADER_CONTENT_LOCATION = 'content-location';
+
+export class BackupEntrySet {
+  entries: BackupEntry[] = [];
+
+  add(additionalEntries: BackupEntry[]): void {
+    const newEntries = additionalEntries.filter(additionalEntry => !this.entries.find(entry => this.equals(entry, additionalEntry)));
+    this.entries = this.entries.concat(newEntries);
+  }
+
+  equals(entry1: BackupEntry, entry2: BackupEntry): boolean {
+    return entry1.backupResource === entry2.backupResource
+      && entry1.resource === entry2.resource;
+  }
+
+  toArray(): BackupEntry[] {
+    return this.entries;
+  }
+
+}
 
 export abstract class AbstractPersistenceService {
   abstract listFiles(): Promise<WorkspaceElement>;
@@ -51,61 +71,24 @@ export class PersistenceService extends AbstractPersistenceService {
   }
 
   startSubscriptions(): void {
-    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (treeNode: TestNavigatorTreeNode) => {
-      this.openNonDirtyTabs.add(treeNode.id);
-    }));
-    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
-      this.openNonDirtyTabs.clear();
-      this.openDirtyTabs.clear();
-    }));
-    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_RENAMED, (payload) => {
-      if (this.openNonDirtyTabs.delete(payload.oldPath)) {
-        this.openNonDirtyTabs.add(payload.newPath);
-      } else if (this.openDirtyTabs.delete(payload.oldPath)) {
-        this.openDirtyTabs.add(payload.newPath);
-      } else {
-        this.log('WARNING: received ' + NAVIGATION_RENAMED
-                 + ' but no corresponding open tab is known within persistence service backend:', payload);
-      }
-    }));
-    this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
-      const removedNonDirty = this.openNonDirtyTabs.delete(payload.id);
-      const removedDirty = this.openDirtyTabs.delete(payload.id);
-      if (!(removedDirty || removedNonDirty)) {
-        this.log('WARNING: received ' + EDITOR_CLOSE
-                 + ' but no corresponding open tab is known within persistence service backend:', payload);
-      }
-    }));
-    this.subscriptions.push(this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload: EditorDirtyChangedPayload) => {
-      this.openNonDirtyTabs.delete(payload.path);
-      this.openDirtyTabs.delete(payload.path);
-      if (payload.dirty) {
-        this.openDirtyTabs.add(payload.path);
-      } else {
-        this.openNonDirtyTabs.add(payload.path);
-      }
-    }));
-    this.subscriptions.push(this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
-      if (this.openDirtyTabs.delete(payload.id)) {
-          this.openNonDirtyTabs.add(payload.id);
-      } else {
-        this.log('WARNING: received ' + EDITOR_SAVE_COMPLETED
-                 + ' but no corresponding open dirty tab is known within persistence service backend', payload);
-      }
-    }));
+    this.subscribeNavigationOpen(); // opens one file
+    this.subscribeNavigationClose(); // closes all
+    this.subscribeNavigationRenamed(); // renames one file
+    this.subscribeEditorClose(); // closes one (editor) file
+    this.subscribeEditorDirtyChanged(); // editor is dirty/not dirty
+    this.subscribeEditorSaveCompleted(); // editor content was saved
   }
 
   stopSubscriptions(): void {
     this.subscriptions.forEach((it) => it.unsubscribe());
   }
 
-
   // TODO: given the fact, that the new backend will not return conflicts other than repull requests,
   //       conflicts could probably be removed from the interface of the public functions here as soon
   //       as the backend is switched to the new endpoints
 
   async listFiles(): Promise<WorkspaceElement> {
-    const result = await this.wrapActionInPulls((client) => client.get<WorkspaceElement>(this.listFilesUrl).toPromise());
+    const result = await this.wrapActionInPulls((client) => client.get<WorkspaceElement>(this.listFilesUrl).toPromise(), []);
     if (result instanceof Conflict) {
       throw Error('conflict "' + result.message + '" return on list files');
     } else {
@@ -114,37 +97,43 @@ export class PersistenceService extends AbstractPersistenceService {
   }
 
   /** copy either a file to its new location (new location is the new filename),
-      or copy whole directories (newPath is the path to the new directory to be created) */
+      or copy whole directories (newPath is the path to the new directory to be created)
+      ui currently allows only for file copies. folder copies are disabled. */
   async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
     return this.wrapActionInPulls(async (client) =>
                                   (await client.post(this.getCopyURL(newPath, sourcePath), '',
                                                      { observe: 'response', responseType: 'text'})
-                                   .toPromise()).body);
+                                   .toPromise()).body, [ newPath, sourcePath ]);
   }
 
   async renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
     return this.wrapActionInPulls(async (client: HttpClient) =>
                                   (await client.put(this.getRenameURL(oldPath), newPath,
                                                     { observe: 'response', responseType: 'text'})
-                                   .toPromise()).body);
+                                   .toPromise()).body, [ newPath, oldPath ]);
   }
 
   async deleteResource(path: string): Promise<string | Conflict> {
     return this.wrapActionInPulls(async (client: HttpClient) =>
                                   (await client.delete(this.getURL(path), { observe: 'response', responseType: 'text'})
-                                   .toPromise()).body);
+                                   .toPromise()).body, [ path ]);
   }
 
   async createResource(path: string, type: ElementType): Promise<string | Conflict> {
     return this.wrapActionInPulls(async (client: HttpClient) =>
                                   (await client.post(this.getURL(path), '',
                                                      { observe: 'response', responseType: 'text', params: { type: type } })
-                                   .toPromise()).body);
+                                   .toPromise()).body, [ path ]);
   }
 
   async getBinaryResource(path: string): Promise<Blob> {
-    const client = await this.httpProvider.getHttpClient();
-    return await client.get(this.getURL(path), { responseType: 'blob' }).toPromise();
+    const result = await this.wrapActionInPulls(async (client: HttpClient) =>
+                                  (await client.get(this.getURL(path), { responseType: 'blob' }).toPromise()), []);
+    if (result instanceof Blob) {
+      return result;
+    } else {
+      throw new Error('unexpected conflict ' + result.message + ' upon loading binary object');
+    }
   }
 
   private informPullChanges(changedResources: FilesChangedPayload, backedUpResources: FilesBackedupPayload): void {
@@ -182,6 +171,20 @@ export class PersistenceService extends AbstractPersistenceService {
     return false;
   }
 
+  private async newWrapActionInPulls<T>(action: (client: HttpClient) => Promise<T | Conflict>,
+                                     additionalFilesOfInterest: string[]): Promise<T | Conflict> {
+    const pullActionProtocol = new PullActionProtocol(this.httpProvider, this.serviceUrl, action, Array.from(this.openNonDirtyTabs),
+                                                      Array.from(this.openDirtyTabs), additionalFilesOfInterest);
+    while (pullActionProtocol.retryExecution()) {
+      pullActionProtocol.execute();
+    }
+    this.informPullChanges(Array.from(pullActionProtocol.changedResourcesSet), pullActionProtocol.backedUpResourcesSet.toArray());
+    if (pullActionProtocol.result instanceof Error) {
+      throw pullActionProtocol.result;
+    }
+    return pullActionProtocol.result;
+  }
+
   /** wrap the given async funnction in a pull loop that will pull as long as the backend requests pulls
       before the backend actually executes the expected function
 
@@ -189,34 +192,34 @@ export class PersistenceService extends AbstractPersistenceService {
       repulling will be aborted (executedRetriesWithoutDiff)
       */
   private async wrapActionInPulls<T>(action: (client: HttpClient) => Promise<T | Conflict>,
-                                     additionalFilesOfInterest?: string[]): Promise<T | Conflict> {
+                                     additionalFilesOfInterest: string[]): Promise<T | Conflict> {
     const client = await this.httpProvider.getHttpClient();
     let result: T | Conflict;
     let executePullAgain = true;
-    let changedResources = new Array<string>();
-    let backedUpResources = new Array<BackupEntry>();
+    let changedResourcesSet = new Set<string>();
+    const backedUpResourcesSet = new BackupEntrySet();
     let executedRetries = -1; // first pull is no retry, first increment will set counter to zero
-    // conter for consecutive retries where pulls did not provide any changes and thus no new chance for the backend to actually proceed
+    // counter for consecutive retries where pulls did not provide any changes and thus no new chance for the backend to actually proceed
     let consecutiveExecutedRetriesWithoutDiff = -1;
+    const filesOfInterest = additionalFilesOfInterest ?
+      additionalFilesOfInterest.concat(Array.from(this.openNonDirtyTabs)) :
+      Array.from(this.openNonDirtyTabs);
+    const dirtyFilesOfInterest = Array.from(this.openDirtyTabs);
     while (executePullAgain) {
       executePullAgain = false;
       executedRetries++;
-      const filesOfInterest = additionalFilesOfInterest ?
-        additionalFilesOfInterest.concat(Array.from(this.openNonDirtyTabs)) :
-        Array.from(this.openNonDirtyTabs);
-      const dirtyFilesOfInterest = Array.from(this.openDirtyTabs);
       const pullResponse = await this.executePull(filesOfInterest, dirtyFilesOfInterest, client);
       if (!pullResponse.failure) {
         this.log('received pull response:', pullResponse);
-        changedResources = changedResources.concat(pullResponse.changedResources);
-        backedUpResources = backedUpResources.concat(pullResponse.backedUpResources);
+        changedResourcesSet = new Set([...Array.from(changedResourcesSet), ...pullResponse.changedResources]);
+        backedUpResourcesSet.add(pullResponse.backedUpResources);
         if (pullResponse.diffExists) {
           consecutiveExecutedRetriesWithoutDiff = 0; // reset counter if a diff is present
         } else {
           consecutiveExecutedRetriesWithoutDiff++;
         }
-        const changesInAdditionalFilesOfInterest = changedResources.filter(changedFile =>
-          additionalFilesOfInterest.find(fileOfInterest => changedFile.startsWith(fileOfInterest)));
+        const changesInAdditionalFilesOfInterest = Array.from(changedResourcesSet).filter(changedFile =>
+           additionalFilesOfInterest.find(fileOfInterest => changedFile.startsWith(fileOfInterest))); //
         if (changesInAdditionalFilesOfInterest.length > 0) {
             // pull resulted in diff that touches (at least one) file of interest
           return new Conflict('File touching this action has been changed, please recheck file before retry.');
@@ -225,8 +228,7 @@ export class PersistenceService extends AbstractPersistenceService {
             this.log('executing action');
             result = await action(client);
           } catch (errorResponse) {
-            this.log('WARNING: got error on action');
-            this.log(errorResponse);
+            this.log('WARNING: got error on action', errorResponse);
             if (this.isRepullConflict(errorResponse)) {
               if (consecutiveExecutedRetriesWithoutDiff > 0) {
                 this.log('WARNING: action failed after ' + consecutiveExecutedRetriesWithoutDiff
@@ -236,18 +238,18 @@ export class PersistenceService extends AbstractPersistenceService {
                 executePullAgain = true;
               }
             } else {
-              this.informPullChanges(changedResources, backedUpResources);
+              this.informPullChanges(Array.from(changedResourcesSet), backedUpResourcesSet.toArray());
               return this.getConflictOrThrowError(errorResponse);
             }
           }
         }
       } else {
-        console.error('unexpected error during pull, pullresponse:', pullResponse);
-        this.informPullChanges(changedResources, backedUpResources);
+        this.log('ERROR: unexpected error during pull, pullresponse:', pullResponse);
+        this.informPullChanges(Array.from(changedResourcesSet), backedUpResourcesSet.toArray());
         throw new Error('pull failure');
       }
     }
-    this.informPullChanges(changedResources, backedUpResources);
+    this.informPullChanges(Array.from(changedResourcesSet), backedUpResourcesSet.toArray());
     return result;
   }
 
@@ -305,6 +307,66 @@ export class PersistenceService extends AbstractPersistenceService {
         payloads.forEach((payload) => console.log(payload));
       }
     }
+  }
+
+  private subscribeNavigationOpen(): void {
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_OPEN, (treeNode: TestNavigatorTreeNode) => {
+      this.openNonDirtyTabs.add(treeNode.id);
+    }));
+  }
+
+  private subscribeNavigationClose(): void {
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_CLOSE, () => {
+      this.openNonDirtyTabs.clear();
+      this.openDirtyTabs.clear();
+    }));
+  }
+
+  private subscribeNavigationRenamed(): void {
+    this.subscriptions.push(this.messagingService.subscribe(NAVIGATION_RENAMED, (payload) => {
+      if (this.openNonDirtyTabs.delete(payload.oldPath)) {
+        this.openNonDirtyTabs.add(payload.newPath);
+      } else if (this.openDirtyTabs.delete(payload.oldPath)) {
+        this.openDirtyTabs.add(payload.newPath);
+      } else {
+        this.log('WARNING: received ' + NAVIGATION_RENAMED
+                 + ' but no corresponding open tab is known within persistence service backend:', payload);
+      }
+    }));
+  }
+
+  private subscribeEditorClose(): void {
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_CLOSE, (payload) => {
+      const removedNonDirty = this.openNonDirtyTabs.delete(payload.id);
+      const removedDirty = this.openDirtyTabs.delete(payload.id);
+      if (!(removedDirty || removedNonDirty)) {
+        this.log('WARNING: received ' + EDITOR_CLOSE
+                 + ' but no corresponding open tab is known within persistence service backend:', payload);
+      }
+    }));
+  }
+
+  private subscribeEditorDirtyChanged(): void {
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_DIRTY_CHANGED, (payload: EditorDirtyChangedPayload) => {
+      this.openNonDirtyTabs.delete(payload.path);
+      this.openDirtyTabs.delete(payload.path);
+      if (payload.dirty) {
+        this.openDirtyTabs.add(payload.path);
+      } else {
+        this.openNonDirtyTabs.add(payload.path);
+      }
+    }));
+  }
+
+  private subscribeEditorSaveCompleted() {
+    this.subscriptions.push(this.messagingService.subscribe(EDITOR_SAVE_COMPLETED, (payload) => {
+      if (this.openDirtyTabs.delete(payload.id)) {
+          this.openNonDirtyTabs.add(payload.id);
+      } else {
+        this.log('WARNING: received ' + EDITOR_SAVE_COMPLETED
+                 + ' but no corresponding open dirty tab is known within persistence service backend', payload);
+      }
+    }));
   }
 
 }

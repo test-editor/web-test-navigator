@@ -162,13 +162,14 @@ describe('PersistenceService', () => {
       messagingService.publish('editor.close', { id: 'yet/another/closed' });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/a-file/no-longer-dirty', dirty: false });
       messagingService.publish('editor.save.completed', { id: 'and/still/a-file/no-longer-dirty'});
-      persistenceService.copyResource('any', 'file'); // could be any other action that executes a pull
+      persistenceService.copyResource('target-file', 'source-file'); // will trigger a pull
       tick();
 
        // then
       const pullMatched = httpMock.match(pullMatcher)[0];
       expect(pullMatched.request.body).toEqual(jasmine.objectContaining(
-        { resources: [ 'some/open-file', 'and/a-file/no-longer-dirty', 'and/still/a-file/no-longer-dirty' ], dirtyResources: [ ] }));
+        { resources: [ 'target-file', 'source-file', 'some/open-file', 'and/a-file/no-longer-dirty', 'and/still/a-file/no-longer-dirty' ],
+          dirtyResources: [ ] }));
     })));
 
   it('ensure that pull passes "resources" and "dirtyResources" without duplicates',
@@ -183,13 +184,13 @@ describe('PersistenceService', () => {
       messagingService.publish('navigation.open', { id: 'some/other/file' });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
       messagingService.publish('editor.dirtyStateChanged', { path: 'and/yet/another', dirty: true });
-      persistenceService.copyResource('any', 'file'); // could be any other action that executes a pull
+      persistenceService.copyResource('target-file', 'source-file'); // will trigger a pull
       tick();
 
        // then
       const pullMatched = httpMock.match(pullMatcher)[0];
       expect(pullMatched.request.body).toEqual(jasmine.objectContaining(
-        { resources: [ 'some/file', 'some/other/file' ], dirtyResources: [ 'and/yet/another' ] }));
+        { resources: [ 'target-file', 'source-file', 'some/file', 'some/other/file' ], dirtyResources: [ 'and/yet/another' ] }));
 
     })));
 
@@ -306,4 +307,5 @@ describe('PersistenceService', () => {
     expect(actualRequest.request.url).toEqual(url);
     actualRequest.flush(message, {status: 409, statusText: 'Conflict'});
   })));
+
 });

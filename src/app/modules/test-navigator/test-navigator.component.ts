@@ -100,11 +100,11 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.persistenceService.stopSubscriptions();
     this.treeDeselectionChangeSubscription.unsubscribe();
     this.treeSelectionChangeSubscription.unsubscribe();
     this.userActivitySubscription.unsubscribe();
     this.openFilesSubscriptions.clear();
-    this.persistenceService.stopSubscriptions();
   }
 
   private setupTreeSelectionChangeListener() {
