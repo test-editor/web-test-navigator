@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
-  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
+  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED, isConflict, Conflict } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, ElementActivity, UserActivityData,
@@ -12,7 +12,6 @@ import { FilterState, FilterType } from '../filter-bar/filter-bar.component';
 import { IndexService } from '../index-service/index.service';
 import { filterFor, isFileOfType, testNavigatorFilter, validExtensions } from '../model/filters';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { Conflict, isConflict } from '../persistence-service/conflict';
 import { PersistenceService } from '../persistence-service/persistence.service';
 import { ElementType, WorkspaceElement } from '../persistence-service/workspace-element';
 import { TreeFilterService } from '../tree-filter-service/tree-filter.service';

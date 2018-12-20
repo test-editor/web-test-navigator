@@ -2,16 +2,15 @@ import { HttpErrorResponse, HttpClient } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import 'rxjs/add/operator/toPromise';
-import { Conflict } from './conflict';
 import { PersistenceServiceConfig } from './persistence.service.config';
 import { ElementType, WorkspaceElement } from './workspace-element';
 import { Subscription } from 'rxjs/Subscription';
 import { NAVIGATION_OPEN, NAVIGATION_RENAMED, FILES_CHANGED, SNACKBAR_DISPLAY_NOTIFICATION, FilesChangedPayload } from '../event-types-out';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE, EditorDirtyChangedPayload } from '../event-types-in';
-import { FILES_BACKEDUP, BackupEntry, FilesBackedupPayload } from '../event-types';
+import { FILES_BACKEDUP, FilesBackedupPayload } from '../event-types';
 import { MessagingService } from '@testeditor/messaging-service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { PullActionProtocol } from './pull-action-protocol.service';
+import { Conflict, PullActionProtocol, BackupEntry } from '@testeditor/testeditor-commons';
 
 
 export abstract class AbstractPersistenceService {
