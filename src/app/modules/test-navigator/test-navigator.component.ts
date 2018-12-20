@@ -132,11 +132,26 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         }
       });
 
+      const treeNodeMap = new Map<string, TestNavigatorTreeNode>();
       this.model.forEach((node) => {
+        treeNodeMap.set(node.id, node);
         if (activitiesMap.has(node.id)) {
           node.activities = new AtomicUserActivitySet(activitiesMap.get(node.id));
+          activitiesMap.delete(node.id);
         } else {
           node.activities = EMPTY_USER_ACTIVITY_SET;
+        }
+      });
+
+      activitiesMap.forEach((activity, nodeId) => {
+        const pathSegments = nodeId.split('/');
+        while (pathSegments.length > 0) {
+          pathSegments.pop();
+          const ancestorNodeId = pathSegments.join('/');
+          if (treeNodeMap.has(ancestorNodeId)) {
+            treeNodeMap.get(ancestorNodeId).setAncestorsAcitivties(nodeId, new AtomicUserActivitySet(activitiesMap.get(nodeId)));
+            break;
+          }
         }
       });
     });

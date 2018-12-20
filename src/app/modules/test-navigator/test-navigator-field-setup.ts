@@ -32,12 +32,13 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
   private readonly activityMarkerSetup: Field;
 
   private readonly mixedActivityMarkerState: MarkerState = {
-    condition: (node: TestNavigatorTreeNode) => node.activities.getTypes(this.showOwnOrAll(node)).length > 1,
+    condition: (node: TestNavigatorTreeNode) => node.activities
+      .withoutBetterFittingNodeForDisplay(node).getTypes().length > 1,
     cssClasses: this.userActivityStyles.getDefaultCssClasses(),
     label: (node: TestNavigatorTreeNode) =>
-      node.activities.getTypes(this.showOwnOrAll(node)).map((userActivity) =>
+      node.activities.withoutBetterFittingNodeForDisplay(node).getTypes().map((userActivity) =>
         this.userActivityLabeler.getLabel({
-          users: node.activities.getUsers(userActivity, this.showOwnOrAll(node)),
+          users: node.activities.withoutBetterFittingNodeForDisplay(node).getUsers(userActivity),
           activityType: userActivity,
           forChildElement: node.type === ElementType.Folder
         })
@@ -63,23 +64,15 @@ export class TestNavigatorFieldSetup implements IndicatorFieldSetup {
 
   private singleActivityMarkerStates(userActivityList: string[]): MarkerState[] {
     return userActivityList.map((userActivity) => ({
-      condition: (node: TestNavigatorTreeNode) => node.activities.hasOnly(userActivity, this.showOwnOrAll(node)),
+      condition: (node: TestNavigatorTreeNode) => node.activities
+        .withoutBetterFittingNodeForDisplay(node).hasOnly(userActivity),
       cssClasses: this.userActivityStyles.getCssClasses(userActivity),
       label: (node: TestNavigatorTreeNode) => this.userActivityLabeler.getLabel({
-        users: node.activities.getUsers(userActivity, this.showOwnOrAll(node)),
+        users: node.activities.withoutBetterFittingNodeForDisplay(node).getUsers(userActivity),
         activityType: userActivity,
         forChildElement: node.type === ElementType.Folder
       })
     }));
-  }
-
-
-  private showOwnOrAll(node: TestNavigatorTreeNode): string {
-    if (node.type === ElementType.Folder && node.expanded) {
-      return node.id;
-    } else {
-      return undefined;
-    }
   }
 
 }
