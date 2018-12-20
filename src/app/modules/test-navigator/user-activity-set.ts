@@ -5,7 +5,7 @@ export interface UserActivitySet {
   getUsers(type: string, element?: string): string[];
   getTypes(element?: string): string[];
   hasOnly(type: string, element?: string): boolean;
-  ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node: TestNavigatorTreeNode): UserActivitySet;
+  withoutBetterFittingNodeForDisplay(node: TestNavigatorTreeNode): UserActivitySet;
 }
 
 export class AtomicUserActivitySet implements UserActivitySet {
@@ -33,7 +33,7 @@ export class AtomicUserActivitySet implements UserActivitySet {
     return this.activities.has(type) && this.activities.size < 2;
   }
 
-  ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node: TestNavigatorTreeNode): UserActivitySet {
+  withoutBetterFittingNodeForDisplay(node: TestNavigatorTreeNode): UserActivitySet {
     return this;
   }
 
@@ -107,7 +107,7 @@ export class CompositeUserActivitySet implements UserActivitySet {
    * one.
    * @param node a tree node providing the viewpoint for filtering the activities.
    */
-  ownAndChildActivitiesWithNoVisibleCloserAncestorNode(node: TestNavigatorTreeNode): UserActivitySet {
+  withoutBetterFittingNodeForDisplay(node: TestNavigatorTreeNode): UserActivitySet {
     const nodePath = node.id;
     const nodeDepth = nodePath.split('/').length;
     return new CompositeUserActivitySet(Array.from(this.elementActivityMap).filter(([activityPath, _]) => {

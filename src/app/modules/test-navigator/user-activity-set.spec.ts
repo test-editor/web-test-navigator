@@ -47,7 +47,7 @@ describe('CompositeUserActivitySet', () => {
       treeNode.expanded = false;
 
       // whwen
-      const actualfilteredSet = activtySetUnderTest.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(treeNode);
+      const actualfilteredSet = activtySetUnderTest.withoutBetterFittingNodeForDisplay(treeNode);
 
       // then
       expect(actualfilteredSet.getTypes('iam/root')).toContain('sampleActivity');
@@ -71,7 +71,7 @@ describe('CompositeUserActivitySet', () => {
       treeNode.expanded = true;
 
       // whwen
-      const actualfilteredSet = activtySetUnderTest.ownAndChildActivitiesWithNoVisibleCloserAncestorNode(treeNode);
+      const actualfilteredSet = activtySetUnderTest.withoutBetterFittingNodeForDisplay(treeNode);
 
       // then
       expect(actualfilteredSet.getTypes('iam/root')).toContain('sampleActivity');
