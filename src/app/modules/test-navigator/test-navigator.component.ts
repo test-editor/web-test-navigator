@@ -1,7 +1,8 @@
 import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
-  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED, isConflict, Conflict } from '@testeditor/testeditor-commons';
+         TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED,
+         isConflict, Conflict } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, ElementActivity, UserActivityData,

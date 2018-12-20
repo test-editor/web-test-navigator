@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpClient } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import 'rxjs/add/operator/toPromise';
@@ -10,7 +10,7 @@ import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_C
 import { FILES_BACKEDUP, FilesBackedupPayload } from '../event-types';
 import { MessagingService } from '@testeditor/messaging-service';
 import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
-import { Conflict, PullActionProtocol, BackupEntry } from '@testeditor/testeditor-commons';
+import { Conflict, PullActionProtocol } from '@testeditor/testeditor-commons';
 
 
 export abstract class AbstractPersistenceService {
