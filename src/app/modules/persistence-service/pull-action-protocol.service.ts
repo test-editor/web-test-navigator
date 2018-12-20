@@ -1,11 +1,38 @@
-import { BackupEntrySet, PullResponse } from './persistence.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Conflict } from './conflict';
 import { HttpProviderService } from '@testeditor/testeditor-commons';
 import { isDevMode } from '@angular/core';
+import { BackupEntry } from '../event-types';
 
 export const HTTP_STATUS_NO_CONTENT = 204;
 export const HTTP_STATUS_CONFLICT = 409;
+
+export interface PullResponse {
+  failure: boolean;
+  diffExists: boolean;
+  headCommit: string;
+  changedResources: Array<string>;
+  backedUpResources: Array<BackupEntry>;
+}
+
+export class BackupEntrySet {
+  entries: BackupEntry[] = [];
+
+  add(additionalEntries: BackupEntry[]): void {
+    const newEntries = additionalEntries.filter(additionalEntry => !this.entries.find(entry => this.equals(entry, additionalEntry)));
+    this.entries = this.entries.concat(newEntries);
+  }
+
+  equals(entry1: BackupEntry, entry2: BackupEntry): boolean {
+    return entry1.backupResource === entry2.backupResource
+      && entry1.resource === entry2.resource;
+  }
+
+  toArray(): BackupEntry[] {
+    return this.entries;
+  }
+
+}
 
 /** Wrap a simple action (e.g. copy, list-files etc.) into a protocol that does the following:
 
@@ -23,7 +50,7 @@ export const HTTP_STATUS_CONFLICT = 409;
     usage:
       const pullActionProtocol = new PullActionProtocol(...);
       while (pullActionProtocol.retryExecution()) {
-        pullActionProtocol.execute();
+        await pullActionProtocol.execute();
         // do some logging?
       }
       // inform about changes of interest
@@ -65,23 +92,32 @@ export class PullActionProtocol<T> {
     this.consecutiveExecutedRetriesWithoutDiff = -1;
   }
 
-  retryExecution(): boolean {
+  /** is a (re)try possible? if a result is present, the protocol is at an end and no more calls to execute() should take place */
+  executionPossible(): boolean {
     return this.result === undefined;
   }
 
-  /** execute a pull (and if without incident) followed by thge action itself */
+  /** execute a pull (and if without incident) followed by the action itself */
   async execute(): Promise<void> {
-    this.httpClient = this.httpClient ? this.httpClient : await this.httpProvider.getHttpClient();
-    this.executedRetries++;
-    const pullResponse = await this.executePull(this.filesOfInterest, this.dirtyFilesOfInterest, this.httpClient);
-    if (!pullResponse.failure) {
-      this.handlePullResponse(pullResponse);
-      if (!this.result) {
-        await this.executeAction();
+    this.log('trace: execute');
+    if (this.executionPossible()) {
+      this.log('trace: execute: get http client', this.httpProvider);
+      this.httpClient = this.httpClient ? this.httpClient : await this.httpProvider.getHttpClient();
+      this.executedRetries++;
+      this.log('trace: execute: execute pull');
+      const pullResponse = await this.executePull(this.filesOfInterest, this.dirtyFilesOfInterest, this.httpClient);
+      this.log('pullResponse', pullResponse);
+      if (!pullResponse.failure) {
+        this.handlePullResponse(pullResponse);
+        if (!this.result) {
+          await this.executeAction();
+        }
+      } else {
+        this.log('ERROR: unexpected error during pull, pullresponse:', pullResponse);
+        this.result = new Error('pull failure');
       }
     } else {
-      this.log('ERROR: unexpected error during pull, pullresponse:', pullResponse);
-      this.result = new Error('pull failure');
+      throw new Error('procotol usage error. no more executions possible.');
     }
   }
 
@@ -117,8 +153,9 @@ export class PullActionProtocol<T> {
 
   private async executeAction(): Promise<void> {
     try {
-      this.log('executing action');
+      this.log('trace: executeAction');
       this.result = await this.action(this.httpClient);
+      this.log('action result', this.result);
     } catch (errorResponse) {
       this.log('WARNING: got error on action', errorResponse);
       if (this.isRepullConflict(errorResponse)) {

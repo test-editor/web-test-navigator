@@ -36,7 +36,6 @@ describe('PersistenceService', () => {
 
     messagingService = TestBed.get(MessagingService);
     httpClient = TestBed.get(HttpClient);
-
     const subscription = messagingService.subscribe('httpClient.needed', () => {
       subscription.unsubscribe();
       messagingService.publish('httpClient.supplied', { httpClient: httpClient });
@@ -242,7 +241,7 @@ describe('PersistenceService', () => {
 
     httpMock.match({
       method: 'DELETE',
-      url: serviceConfig.persistenceServiceUrl + '/documents/path/to/file%3F.tcl'
+      url: serviceConfig.persistenceServiceUrl + '/documents/path/to/file%3F.tcl?clean=true'
     })[0].flush('');
   })));
 
@@ -251,7 +250,7 @@ describe('PersistenceService', () => {
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
     // given
     const tclFilePath = 'path/to/file.tcl';
-    const url = `${serviceConfig.persistenceServiceUrl}/documents/${tclFilePath}`;
+    const url = `${serviceConfig.persistenceServiceUrl}/documents/${tclFilePath}?clean=true`;
     const message = `The file '${tclFilePath}' already exists.`;
     // const mockResponse = new HttpResponse({ body: message, status: 409, statusText: 'Conflict' });
 
@@ -281,7 +280,7 @@ describe('PersistenceService', () => {
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
     // given
     const tclFilePath = 'path/to/file.tcl';
-    const url = `${serviceConfig.persistenceServiceUrl}/documents/${tclFilePath}`;
+    const url = `${serviceConfig.persistenceServiceUrl}/documents/${tclFilePath}?clean=true`;
     const message = `The file '${tclFilePath}' does not exist.`;
 
     const expectedResult = new Conflict(message);
@@ -293,7 +292,7 @@ describe('PersistenceService', () => {
     .then((result) => {
       expect(result).toEqual(expectedResult);
     }, (response) => {
-      fail('expect conflict to be remapped to regular response!');
+      fail('expect conflict to be remapped to regular response: ' + response.toString());
     });
     tick();
 

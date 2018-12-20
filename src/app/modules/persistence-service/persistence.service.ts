@@ -14,29 +14,6 @@ import { TestNavigatorTreeNode } from '../model/test-navigator-tree-node';
 import { PullActionProtocol } from './pull-action-protocol.service';
 
 
-export const HTTP_STATUS_NO_CONTENT = 204;
-export const HTTP_STATUS_CONFLICT = 409;
-export const HTTP_HEADER_CONTENT_LOCATION = 'content-location';
-
-export class BackupEntrySet {
-  entries: BackupEntry[] = [];
-
-  add(additionalEntries: BackupEntry[]): void {
-    const newEntries = additionalEntries.filter(additionalEntry => !this.entries.find(entry => this.equals(entry, additionalEntry)));
-    this.entries = this.entries.concat(newEntries);
-  }
-
-  equals(entry1: BackupEntry, entry2: BackupEntry): boolean {
-    return entry1.backupResource === entry2.backupResource
-      && entry1.resource === entry2.resource;
-  }
-
-  toArray(): BackupEntry[] {
-    return this.entries;
-  }
-
-}
-
 export abstract class AbstractPersistenceService {
   abstract listFiles(): Promise<WorkspaceElement>;
   abstract renameResource(newPath: string, oldPath: string): Promise<string | Conflict>;
@@ -45,19 +22,11 @@ export abstract class AbstractPersistenceService {
   abstract getBinaryResource(path: string): Promise<Blob>;
 }
 
-export interface PullResponse {
-  failure: boolean;
-  diffExists: boolean;
-  headCommit: string;
-  changedResources: Array<string>;
-  backedUpResources: Array<BackupEntry>;
-}
-
 @Injectable()
 export class PersistenceService extends AbstractPersistenceService {
 
-  private serviceUrl: string;
-  private listFilesUrl: string;
+  private readonly serviceUrl: string;
+  private readonly listFilesUrl: string;
   private openNonDirtyTabs: Set<string>;
   private openDirtyTabs: Set<string>;
   private subscriptions: Subscription[] = [];
@@ -83,10 +52,6 @@ export class PersistenceService extends AbstractPersistenceService {
     this.subscriptions.forEach((it) => it.unsubscribe());
   }
 
-  // TODO: given the fact, that the new backend will not return conflicts other than repull requests,
-  //       conflicts could probably be removed from the interface of the public functions here as soon
-  //       as the backend is switched to the new endpoints
-
   async listFiles(): Promise<WorkspaceElement> {
     const result = await this.wrapActionInPulls((client) => client.get<WorkspaceElement>(this.listFilesUrl).toPromise(), []);
     if (result instanceof Conflict) {
@@ -100,6 +65,7 @@ export class PersistenceService extends AbstractPersistenceService {
       or copy whole directories (newPath is the path to the new directory to be created)
       ui currently allows only for file copies. folder copies are disabled. */
   async copyResource(newPath: string, sourcePath: string): Promise<string | Conflict> {
+    this.log('trace: copy resource, post ' + this.getCopyURL(newPath, sourcePath));
     return this.wrapActionInPulls(async (client) =>
                                   (await client.post(this.getCopyURL(newPath, sourcePath), '',
                                                      { observe: 'response', responseType: 'text'})
@@ -107,6 +73,7 @@ export class PersistenceService extends AbstractPersistenceService {
   }
 
   async renameResource(newPath: string, oldPath: string): Promise<string | Conflict> {
+    this.log('trace: rename resource, put ' + this.getRenameURL(oldPath));
     return this.wrapActionInPulls(async (client: HttpClient) =>
                                   (await client.put(this.getRenameURL(oldPath), newPath,
                                                     { observe: 'response', responseType: 'text'})
@@ -114,12 +81,14 @@ export class PersistenceService extends AbstractPersistenceService {
   }
 
   async deleteResource(path: string): Promise<string | Conflict> {
+    this.log('trace: delete resource, delete ' + this.getURL(path));
     return this.wrapActionInPulls(async (client: HttpClient) =>
                                   (await client.delete(this.getURL(path), { observe: 'response', responseType: 'text'})
                                    .toPromise()).body, [ path ]);
   }
 
   async createResource(path: string, type: ElementType): Promise<string | Conflict> {
+    this.log('trace: create resource, post ' + this.getURL(path));
     return this.wrapActionInPulls(async (client: HttpClient) =>
                                   (await client.post(this.getURL(path), '',
                                                      { observe: 'response', responseType: 'text', params: { type: type } })
@@ -159,145 +128,43 @@ export class PersistenceService extends AbstractPersistenceService {
     }
   }
 
-  /** is the given a conflict (returned by any backend action) that indicates a repull? */
-  private isRepullConflict(response: any): boolean {
-    if (this.isHttpErrorResponse(response)) {
-      if (response.status === HTTP_STATUS_CONFLICT) {
-        if (response.error === 'REPULL') {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private async newWrapActionInPulls<T>(action: (client: HttpClient) => Promise<T | Conflict>,
-                                     additionalFilesOfInterest: string[]): Promise<T | Conflict> {
-    const pullActionProtocol = new PullActionProtocol(this.httpProvider, this.serviceUrl, action, Array.from(this.openNonDirtyTabs),
-                                                      Array.from(this.openDirtyTabs), additionalFilesOfInterest);
-    while (pullActionProtocol.retryExecution()) {
-      pullActionProtocol.execute();
-    }
-    this.informPullChanges(Array.from(pullActionProtocol.changedResourcesSet), pullActionProtocol.backedUpResourcesSet.toArray());
-    if (pullActionProtocol.result instanceof Error) {
-      throw pullActionProtocol.result;
-    }
-    return pullActionProtocol.result;
-  }
-
-  /** wrap the given async funnction in a pull loop that will pull as long as the backend requests pulls
-      before the backend actually executes the expected function
-
-      if the action fails, the backend requests repulls, but pulling will repeatedly report no differences,
-      repulling will be aborted (executedRetriesWithoutDiff)
-      */
   private async wrapActionInPulls<T>(action: (client: HttpClient) => Promise<T | Conflict>,
                                      additionalFilesOfInterest: string[]): Promise<T | Conflict> {
-    const client = await this.httpProvider.getHttpClient();
-    let result: T | Conflict;
-    let executePullAgain = true;
-    let changedResourcesSet = new Set<string>();
-    const backedUpResourcesSet = new BackupEntrySet();
-    let executedRetries = -1; // first pull is no retry, first increment will set counter to zero
-    // counter for consecutive retries where pulls did not provide any changes and thus no new chance for the backend to actually proceed
-    let consecutiveExecutedRetriesWithoutDiff = -1;
-    const filesOfInterest = additionalFilesOfInterest ?
-      additionalFilesOfInterest.concat(Array.from(this.openNonDirtyTabs)) :
-      Array.from(this.openNonDirtyTabs);
-    const dirtyFilesOfInterest = Array.from(this.openDirtyTabs);
-    while (executePullAgain) {
-      executePullAgain = false;
-      executedRetries++;
-      const pullResponse = await this.executePull(filesOfInterest, dirtyFilesOfInterest, client);
-      if (!pullResponse.failure) {
-        this.log('received pull response:', pullResponse);
-        changedResourcesSet = new Set([...Array.from(changedResourcesSet), ...pullResponse.changedResources]);
-        backedUpResourcesSet.add(pullResponse.backedUpResources);
-        if (pullResponse.diffExists) {
-          consecutiveExecutedRetriesWithoutDiff = 0; // reset counter if a diff is present
-        } else {
-          consecutiveExecutedRetriesWithoutDiff++;
-        }
-        const changesInAdditionalFilesOfInterest = Array.from(changedResourcesSet).filter(changedFile =>
-           additionalFilesOfInterest.find(fileOfInterest => changedFile.startsWith(fileOfInterest))); //
-        if (changesInAdditionalFilesOfInterest.length > 0) {
-            // pull resulted in diff that touches (at least one) file of interest
-          return new Conflict('File touching this action has been changed, please recheck file before retry.');
-        } else {
-          try {
-            this.log('executing action');
-            result = await action(client);
-          } catch (errorResponse) {
-            this.log('WARNING: got error on action', errorResponse);
-            if (this.isRepullConflict(errorResponse)) {
-              if (consecutiveExecutedRetriesWithoutDiff > 0) {
-                this.log('WARNING: action failed after ' + consecutiveExecutedRetriesWithoutDiff
-                         + ' consecutive retries (and pulls) without differences');
-              } else {
-                this.log('execute pull again, retry number ' + (executedRetries + 1));
-                executePullAgain = true;
-              }
-            } else {
-              this.informPullChanges(Array.from(changedResourcesSet), backedUpResourcesSet.toArray());
-              return this.getConflictOrThrowError(errorResponse);
-            }
-          }
-        }
-      } else {
-        this.log('ERROR: unexpected error during pull, pullresponse:', pullResponse);
-        this.informPullChanges(Array.from(changedResourcesSet), backedUpResourcesSet.toArray());
-        throw new Error('pull failure');
-      }
+    const PULL_MAX_RETRY_COUNT = 20;
+    const pullActionProtocol = new PullActionProtocol(this.httpProvider, this.serviceUrl, action, Array.from(this.openNonDirtyTabs),
+                                                      Array.from(this.openDirtyTabs), additionalFilesOfInterest);
+    let retryCount = 0;
+    while (pullActionProtocol.executionPossible() && retryCount < PULL_MAX_RETRY_COUNT) {
+      await pullActionProtocol.execute();
+      retryCount++;
     }
-    this.informPullChanges(Array.from(changedResourcesSet), backedUpResourcesSet.toArray());
-    return result;
-  }
-
-  private async executePull(nonDirtyFiles: string[], dirtyFiles: string[], httpClient?: HttpClient): Promise<PullResponse> {
-    const client = httpClient ? httpClient : await this.httpProvider.getHttpClient();
-    try {
-      this.log('executing pull with resources:', nonDirtyFiles);
-      this.log('..and dirtyResources:', dirtyFiles);
-      return (await client.post(this.getPullURL(),
-                                { resources: nonDirtyFiles, dirtyResources: dirtyFiles },
-                                { observe: 'response', responseType: 'json' }).toPromise()).body as PullResponse;
-    } catch (errorResponse) {
-      // TODO: pull must always work, otherwise the local workspace is in deep trouble
-      console.error('could not execute pull', errorResponse);
+    if (retryCount >= PULL_MAX_RETRY_COUNT) {
+      console.error(`aborted after ${retryCount} retries`);
+      throw new Error(`pull retry timeout after ${retryCount} retries`);
+    } else {
+      this.informPullChanges(Array.from(pullActionProtocol.changedResourcesSet), pullActionProtocol.backedUpResourcesSet.toArray());
+      if (pullActionProtocol.result instanceof Error) {
+        throw pullActionProtocol.result;
+      }
+      return pullActionProtocol.result;
     }
   }
 
   private getRenameURL(path: string): string {
-    return this.getURL(path) + '?rename';
+    return this.getDocumentURL(path) + '?rename&clean=true';
   }
 
   private getCopyURL(path: string, sourcePath: string): string {
-    return this.getURL(path) + '?source=' + encodeURIComponent(sourcePath) + '&clean=true';
+    return this.getDocumentURL(path) + '?source=' + encodeURIComponent(sourcePath) + '&clean=true';
   }
 
-  private getPullURL(): string {
-    return `${this.serviceUrl}/workspace/pull`;
-  }
-
-  private getURL(path: string): string {
+  private getDocumentURL(path: string): string {
     const encodedPath = path.split('/').map(encodeURIComponent).join('/');
     return `${this.serviceUrl}/documents/${encodedPath}`;
   }
 
-  private getConflictOrThrowError(errorResponse: HttpErrorResponse | any): Conflict {
-    if (this.isHttpErrorResponse(errorResponse)) {
-      if (errorResponse.status === HTTP_STATUS_CONFLICT) {
-        return new Conflict(errorResponse.error);
-      } else {
-        throw new Error(errorResponse.error);
-      }
-    } else {
-      throw errorResponse;
-    }
-  }
-
-  private isHttpErrorResponse(response: HttpErrorResponse | any): response is HttpErrorResponse {
-    return (<HttpErrorResponse>response).status !== undefined && (<HttpErrorResponse>response).error !== undefined;
+  private getURL(path: string): string {
+    return this.getDocumentURL(path) + '?clean=true';
   }
 
   private log(msg: String, ...payloads: any[]) {

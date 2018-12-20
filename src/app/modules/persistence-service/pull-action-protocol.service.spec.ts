@@ -67,16 +67,17 @@ describe('PullActionProtocol', () => {
     };
   });
 
-  fit('is initially reexecutable',  () => {
+  it('is initially executable and result is undefined',  () => {
     // given
     // when
     const pullActionProtocol = new PullActionProtocol(httpProviderService, serviceConfig.persistenceServiceUrl,
                                                       async (client: HttpClient) => true, [], [], []);
     // then
-    expect(pullActionProtocol.retryExecution()).toBeTruthy();
+    expect(pullActionProtocol.executionPossible()).toBeTruthy();
+    expect(pullActionProtocol.result).toBeUndefined();
   });
 
-  fit('executes pull and action', fakeAsync(inject([HttpTestingController, PersistenceService],
+  it('executes (pull and action)', fakeAsync(inject([HttpTestingController, PersistenceService],
     (httpMock: HttpTestingController, persistenceService: PersistenceService) => {
       // given
       const pullActionProtocol = new PullActionProtocol(httpProviderService, serviceConfig.persistenceServiceUrl,
@@ -94,10 +95,10 @@ describe('PullActionProtocol', () => {
       tick();
 
       expect(pullActionProtocol.result).toBeTruthy();
-      expect(pullActionProtocol.retryExecution()).toBeFalsy();
+      expect(pullActionProtocol.executionPossible()).toBeFalsy();
     })));
 
-  fit('executing pull and action reports error if diff happens in ciritcal file list',
+  it('executing pull and action reports error if diff happens in ciritcal file list',
     fakeAsync(inject([HttpTestingController], (httpMock: HttpTestingController) => {
       // given
       const pullActionProtocol = new PullActionProtocol(httpProviderService, serviceConfig.persistenceServiceUrl,
@@ -116,10 +117,10 @@ describe('PullActionProtocol', () => {
 
       expect(pullActionProtocol.result instanceof Conflict).toBeTruthy();
       expect((pullActionProtocol.result as Conflict).message).toMatch(new RegExp('.*touching.*action.*'));
-      expect(pullActionProtocol.retryExecution()).toBeFalsy();
+      expect(pullActionProtocol.executionPossible()).toBeFalsy();
     })));
 
-  fit('executing (pull and action) three times, succeeding on third call aggregates diffs in non critical files (removing duplicates)',
+  it('executing (pull and action) three times, succeeding on third call aggregates diffs in non critical files (removing duplicates)',
     fakeAsync(inject([HttpTestingController], (httpMock: HttpTestingController) => {
       // given
       const pullActionProtocol = new PullActionProtocol(
@@ -140,7 +141,7 @@ describe('PullActionProtocol', () => {
 
       for (let i = 0; i < 2; i++) {
         expect(pullActionProtocol.result).toBeUndefined();
-        expect(pullActionProtocol.retryExecution()).toBeTruthy();
+        expect(pullActionProtocol.executionPossible()).toBeTruthy();
         pullActionProtocol.execute();
         tick();
 
@@ -158,10 +159,10 @@ describe('PullActionProtocol', () => {
       expect(pullActionProtocol.backedUpResourcesSet.toArray()).toEqual(
         jasmine.objectContaining([{ resource: 'dirty-file', backedUpResources: 'backup-file' },
                                   { resource: 'second-dirty-file', backedUpResources: 'second-backup-file' }]));
-      expect(pullActionProtocol.retryExecution()).toBeFalsy();
+      expect(pullActionProtocol.executionPossible()).toBeFalsy();
     })));
 
-  fit('executing fails if pull fails',
+  it('executing fails if pull fails',
     fakeAsync(inject([HttpTestingController], (httpMock: HttpTestingController) => {
       // given
       const pullActionProtocol = new PullActionProtocol(
@@ -180,12 +181,12 @@ describe('PullActionProtocol', () => {
       tick();
 
       // then
-      expect(pullActionProtocol.retryExecution()).toBeFalsy();
+      expect(pullActionProtocol.executionPossible()).toBeFalsy();
       expect(pullActionProtocol.result instanceof Error).toBeTruthy();
       expect((pullActionProtocol.result as Error).message).toMatch(new RegExp('.*pull.*failure.*'));
     })));
 
-  fit('execution fails after two consecutive pulls without diff, even though backend requests repull',
+  it('execution fails after two consecutive pulls without diff, given that the backend keeps requesting repulls',
     fakeAsync(inject([HttpTestingController], (httpMock: HttpTestingController) => {
       // given
       const pullActionProtocol = new PullActionProtocol(
@@ -195,7 +196,7 @@ describe('PullActionProtocol', () => {
 
       // when
       for (let i = 0; i < 6; i++) {
-        expect(pullActionProtocol.retryExecution()).toBeTruthy('failed on count ' + i);
+        expect(pullActionProtocol.executionPossible()).toBeTruthy('failed on count ' + i);
 
         pullActionProtocol.execute();
         tick();
@@ -208,7 +209,7 @@ describe('PullActionProtocol', () => {
         tick();
       }
 
-      expect(pullActionProtocol.retryExecution()).toBeFalsy();
+      expect(pullActionProtocol.executionPossible()).toBeFalsy();
       expect(pullActionProtocol.result instanceof Error).toBeTruthy();
       expect((pullActionProtocol.result as Error).message).toMatch(new RegExp('.*consecutive.*retr.*'));
     })));
