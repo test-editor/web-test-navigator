@@ -1,6 +1,6 @@
 {
   "name": "@testeditor/test-navigator",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "Angular component providing a top level navigation view for test editor project",
   "license": "EPL",
   "keywords": [
