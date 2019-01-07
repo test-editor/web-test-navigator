@@ -10,7 +10,7 @@
 .test-nav-tree {
   overflow-y: auto; /* vertical scroll bar should automatically appear */
   overflow-x: hidden; /* since tree content is cut (ellipsis added), never show horizontal scrol bar */
-  height: calc(100% - 64px); /* -34 px occupied by the icon button bar! another 30 occupied by logout */
+  height: calc(100% - 54px); /* -34 px occupied by the icon button bar! another 20 occupied by filter buttons  */
 }
 
 .icon-menu {

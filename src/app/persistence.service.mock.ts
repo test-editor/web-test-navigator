@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Conflict } from './modules/persistence-service/conflict';
 import { AbstractPersistenceService } from './modules/persistence-service/persistence.service';
 import { ElementType, WorkspaceElement } from './modules/persistence-service/workspace-element';
+import { Conflict } from '@testeditor/testeditor-commons';
 
 @Injectable()
 export class PersistenceServiceMock extends AbstractPersistenceService {
