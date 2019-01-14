@@ -1,8 +1,8 @@
 import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, TreeNode, TreeViewerConfig, TreeViewerInputBoxConfig,
-         TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED,
-         isConflict, Conflict } from '@testeditor/testeditor-commons';
+import { CommonTreeNodeActions, Conflict, DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, isConflict, TreeNode,
+  TreeViewerInputBoxConfig, TreeViewerKeyboardConfig, TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED,
+  TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, ElementActivity, UserActivityData,
@@ -52,7 +52,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
 
   model: TestNavigatorTreeNode;
   filterState: FilterState = { aml: false, tcl: false, tsl: false };
-  treeConfig: TreeViewerConfig = {
+  treeConfig: TreeViewerKeyboardConfig = {
     onClick: () => null,
     onDoubleClick: (node: TreeNode) => {
       const testNavNode = (node as TestNavigatorTreeNode);
@@ -65,7 +65,8 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     onIconClick: (node: TreeNode) => node.expanded = !node.expanded,
     embeddedButton: (node: TreeNode) => new EmbeddedDeleteButton(
       new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))),
-    indicatorFields: []
+    indicatorFields: [],
+    onKeyPress: CommonTreeNodeActions.arrowKeyNavigation
   };
 
   /* get markers that are not visible in the test navigator, since affected files are filtered by the current FilterState */
