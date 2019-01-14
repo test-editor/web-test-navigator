@@ -219,10 +219,10 @@
   resolved "https://registry.yarnpkg.com/@testeditor/messaging-service/-/messaging-service-1.4.1.tgz#de0f8cdd18bc6b19ad01a82ba6d0f0f75ff85266"
   integrity sha512-M9rF57W3EcLyvZvmA/GKho9D/SKKeloIvoOx+DvMRfuNB6hnrWdPR4tdrCXVAbZAQe2Y237uxdhnK7HbsUXgkw==
 
-"@testeditor/testeditor-commons@~0.3.0":
-  version "0.3.10"
-  resolved "https://registry.yarnpkg.com/@testeditor/testeditor-commons/-/testeditor-commons-0.3.10.tgz#51b2723950f990220723d586a7ceb188082442e6"
-  integrity sha512-E4EUZeNDt0wRtXoFv741+tB96W1p5YlZMxs4/t8H9u1OALEr2ggGqVKJaYmq1Adkin7Eznm1ElOYmixjX3j/cw==
+"@testeditor/testeditor-commons@~0.4.0":
+  version "0.4.2"
+  resolved "https://registry.yarnpkg.com/@testeditor/testeditor-commons/-/testeditor-commons-0.4.2.tgz#032b5a407005754ac70a54f3d8fe7b39c37875ea"
+  integrity sha512-YzBn6D3E9n68JDx3qX53iwQ8QVl9Fn97mFUveWYegh5PFBldjaBsVernutcwox4FU3vixXSu81QlAGVZ7ZXCHw==
   dependencies:
     tslib "^1.7.1"
 

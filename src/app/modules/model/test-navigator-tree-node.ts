@@ -4,7 +4,7 @@ import { ElementType, WorkspaceElement } from '../persistence-service/workspace-
 import { CompositeUserActivitySet, EMPTY_USER_ACTIVITY_SET, UserActivitySet } from '../test-navigator/user-activity-set';
 import { ValidationMarkerSummary } from '../validation-marker-summary/validation-marker-summary';
 
-export class TestNavigatorTreeNode implements TreeNode {
+export class TestNavigatorTreeNode extends TreeNode {
   private static readonly hideCssClass = 'hidden';
   private static readonly folderCssClass = 'fas fa-folder';
   private static readonly unknownFileCssClass = 'fas fa-question';
@@ -27,6 +27,7 @@ export class TestNavigatorTreeNode implements TreeNode {
 
 
   constructor(private workspaceElement: WorkspaceElement, parent?: TestNavigatorTreeNode) {
+    super();
     if (workspaceElement.type === ElementType.Folder) {
       this.expanded = false;
     }
