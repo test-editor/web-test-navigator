@@ -16,13 +16,12 @@ export class TestNavigatorTreeNode extends TreeNode {
   };
 
   private _activities = new CompositeUserActivitySet();
-  private _children: TestNavigatorTreeNode[];
+  private _children: this[];
   private _validation = ValidationMarkerSummary.zero;
   collapsedCssClasses = 'fas fa-chevron-right';
   expandedCssClasses = 'fas fa-chevron-down';
   cssClasses = '';
   expanded = undefined;
-  parent: TestNavigatorTreeNode;
   dirty = false;
 
 
@@ -34,7 +33,7 @@ export class TestNavigatorTreeNode extends TreeNode {
     if (parent === undefined) {
       this.parent = null;
     } else {
-      this.parent = parent;
+      this.parent = parent as this;
     }
     this._activities.set(this.id, EMPTY_USER_ACTIVITY_SET);
   }
@@ -57,6 +56,59 @@ export class TestNavigatorTreeNode extends TreeNode {
 
   isFiltered(): boolean {
     return this.cssClasses.includes(TestNavigatorTreeNode.hideCssClass);
+  }
+
+  nextVisible(): this {
+    if (this.children.length > 0 && this.expanded) {
+      const firstVisibleChild = this.children.find((child) => !child.isFiltered());
+      if (firstVisibleChild) {
+        return firstVisibleChild;
+      }
+    }
+
+    const sibling = this.nextSiblingOrAncestorSibling();
+    return sibling ? sibling : this;
+  }
+
+  protected nextSiblingOrAncestorSibling(): this {
+    let sibling: this = null;
+    if (this.parent != null) {
+      const nodeIndex = this.parent.children.indexOf(this);
+      const nextVisibleSibling = this.parent.children.slice(nodeIndex + 1).find((child) => !child.isFiltered());
+      if (nextVisibleSibling) {
+        sibling = nextVisibleSibling;
+      } else {
+        sibling = this.parent.nextSiblingOrAncestorSibling();
+      }
+    }
+    console.log('next sibling is', sibling.id);
+    return sibling;
+  }
+
+  previousVisible(): this {
+    if (this.parent != null) {
+      const nodeIndex = this.parent.children.indexOf(this);
+      if (nodeIndex !== 0) {
+        const firstVisibleSiblingAbove = this.parent.children.slice(0, nodeIndex).reverse().find((child) => !child.isFiltered());
+        if (firstVisibleSiblingAbove) {
+          return firstVisibleSiblingAbove.lastVisibleDescendant();
+        }
+      }
+
+      return this.parent;
+    }
+    return this;
+  }
+
+  protected lastVisibleDescendant(): this {
+    if (this.expanded) {
+      const lastVisible = this.children.slice().reverse().find((child) => !child.isFiltered());
+      if (lastVisible) {
+        return lastVisible.lastVisibleDescendant();
+      }
+    }
+
+    return this;
   }
 
   private removeFromCssClasses(cssClasses: string, classToRemove: string): string {
@@ -130,10 +182,10 @@ export class TestNavigatorTreeNode extends TreeNode {
     return this.parent ? this.parent.root : this;
   }
 
-  get children(): TestNavigatorTreeNode[] {
+  get children(): this[] {
     if (!this._children) {
       if (this.workspaceElement.children) {
-        this._children = this.workspaceElement.children.map((element) => new TestNavigatorTreeNode(element, this))
+        this._children = this.workspaceElement.children.map((element) => new TestNavigatorTreeNode(element, this) as this)
           .sort((nodeA, nodeB) => {
             return nodeA.name.localeCompare(nodeB.name);
           });
@@ -155,9 +207,9 @@ export class TestNavigatorTreeNode extends TreeNode {
 
   addChild(rawElement: WorkspaceElement): TestNavigatorTreeNode {
     this.workspaceElement.children.push(rawElement);
-    let newNode: TestNavigatorTreeNode;
+    let newNode: this;
     if (this._children) {
-      newNode = new TestNavigatorTreeNode(rawElement, this);
+      newNode = (new TestNavigatorTreeNode(rawElement, this)) as this;
       this._children.push(newNode);
       this._children.sort((nodeA, nodeB) => nodeA.name.localeCompare(nodeB.name));
     } else {
@@ -189,7 +241,7 @@ export class TestNavigatorTreeNode extends TreeNode {
     }
   }
 
-  removeChild(child: TestNavigatorTreeNode) {
+  removeChild(child: this) {
     if (this._children) {
       this._children.splice(this._children.indexOf(child), 1);
     }
