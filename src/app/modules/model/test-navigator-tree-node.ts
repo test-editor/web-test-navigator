@@ -81,7 +81,6 @@ export class TestNavigatorTreeNode extends TreeNode {
         sibling = this.parent.nextSiblingOrAncestorSibling();
       }
     }
-    console.log('next sibling is', sibling.id);
     return sibling;
   }
 
