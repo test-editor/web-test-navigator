@@ -170,7 +170,7 @@ export class TestNavigatorTreeNode extends TreeNode {
     }
   }
 
-  private updateValidation(difference: ValidationMarkerSummary) {
+  protected updateValidation(difference: ValidationMarkerSummary) {
     this._validation = this._validation.add(difference);
     if (this.parent) {
       this.parent.updateValidation(difference);
