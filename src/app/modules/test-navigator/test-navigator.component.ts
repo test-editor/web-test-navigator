@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { CommonTreeNodeActions, Conflict, DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, isConflict,
+import { ActionInTree, CommonTreeNodeActions, Conflict, DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, isConflict,
   TreeNode, TreeNodeAction, TreeViewerInputBoxConfig, TreeViewerKeyboardConfig, TREE_NODE_COMMENCE_ACTION_AT_SELECTED,
   TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
@@ -68,12 +68,15 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     indicatorFields: [],
     onKeyPress: new Map([...Array.from(this.commonActions.arrowKeyNavigation).map(
       ([key, action]): [string, TreeNodeAction] => [key, (node: TreeNode) => this.renameRunning ? null : action(node)]),
-      ['Enter', (node: TestNavigatorTreeNode) => this.open(node)],
+      ['Enter', (node: TestNavigatorTreeNode) => this.renameRunning ? null : this.open(node)],
       ['F2', (node: TreeNode) => this.renameElement()],
       ['Delete', (node: TreeNode) => {
         if (!this.renameRunning) {
-          this.messagingService.publish(TREE_NODE_COMMENCE_ACTION_AT_SELECTED,
-            new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node)));
+          const payload: ActionInTree = {
+            treeRoot: this.model.root,
+            action: new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))
+          };
+          this.messagingService.publish(TREE_NODE_COMMENCE_ACTION_AT_SELECTED, payload);
           this.log('published TREE_NODE_COMMENCE_ACTION_AT_SELECTED', node);
         }
       }]])
