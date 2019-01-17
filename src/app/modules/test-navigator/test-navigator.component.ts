@@ -1,8 +1,8 @@
 import { ChangeDetectorRef, Component, isDevMode, OnDestroy, OnInit } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
-import { CommonTreeNodeActions, Conflict, DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, isConflict, TreeNode,
-  TreeViewerInputBoxConfig, TreeViewerKeyboardConfig, TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED,
-  TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
+import { CommonTreeNodeActions, Conflict, DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, isConflict,
+  TreeNode, TreeNodeAction, TreeViewerInputBoxConfig, TreeViewerKeyboardConfig, TREE_NODE_COMMENCE_ACTION_AT_SELECTED,
+  TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
 import { Subscription } from 'rxjs/Subscription';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, ElementActivity, UserActivityData,
@@ -66,7 +66,17 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     embeddedButton: (node: TreeNode) => new EmbeddedDeleteButton(
       new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))),
     indicatorFields: [],
-    onKeyPress: CommonTreeNodeActions.arrowKeyNavigation
+    onKeyPress: new Map([...Array.from(this.commonActions.arrowKeyNavigation).map(
+      ([key, action]): [string, TreeNodeAction] => [key, (node: TreeNode) => this.renameRunning ? null : action(node)]),
+      ['Enter', (node: TestNavigatorTreeNode) => this.open(node)],
+      ['F2', (node: TreeNode) => this.renameElement()],
+      ['Delete', (node: TreeNode) => {
+        if (!this.renameRunning) {
+          this.messagingService.publish(TREE_NODE_COMMENCE_ACTION_AT_SELECTED,
+            new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node)));
+          this.log('published TREE_NODE_COMMENCE_ACTION_AT_SELECTED', node);
+        }
+      }]])
   };
 
   /* get markers that are not visible in the test navigator, since affected files are filtered by the current FilterState */
@@ -89,6 +99,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
               private persistenceService: PersistenceService,
               private validationMarkerService: ValidationMarkerService,
               private changeDetector: ChangeDetectorRef,
+              private commonActions: CommonTreeNodeActions,
               indicators: IndicatorFieldSetup) {
     this.treeConfig.indicatorFields = indicators.fields;
   }

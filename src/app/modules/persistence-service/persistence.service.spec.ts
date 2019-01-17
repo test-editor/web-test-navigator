@@ -2,11 +2,11 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { fakeAsync, inject, TestBed, tick } from '@angular/core/testing';
 import { MessagingModule, MessagingService } from '@testeditor/messaging-service';
-import { HttpProviderService, Conflict } from '@testeditor/testeditor-commons';
-import { PersistenceServiceConfig } from './persistence.service.config';
-import { PersistenceService } from './persistence.service';
-import { ElementType } from './workspace-element';
+import { Conflict, HttpProviderService } from '@testeditor/testeditor-commons';
 import { BackupEntry } from '../event-types';
+import { PersistenceService } from './persistence.service';
+import { PersistenceServiceConfig } from './persistence.service.config';
+import { ElementType } from './workspace-element';
 
 describe('PersistenceService', () => {
   let serviceConfig: PersistenceServiceConfig;
