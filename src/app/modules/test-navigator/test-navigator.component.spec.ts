@@ -25,9 +25,12 @@ import { TestNavigatorFieldSetup, TEST_NAVIGATOR_USER_ACTIVITY_LABEL_PROVIDER, T
   TEST_NAVIGATOR_USER_ACTIVITY_STYLE_PROVIDER } from './test-navigator-field-setup';
 import { TestNavigatorComponent } from './test-navigator.component';
 import { AtomicUserActivitySet } from './user-activity-set';
+import { NAVIGATION_OPEN } from '../event-types-out';
 
 describe('TestNavigatorComponent', () => {
   const SAMPLE_ACTIVITY = 'sample.activity';
+  const SUBFOLDER_DOM_INDEX = 1;
+  const TCL_FILE_DOM_INDEX = 2;
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let mockFilenameValidator: FilenameValidator;
@@ -87,8 +90,12 @@ describe('TestNavigatorComponent', () => {
     tick(); fixture.detectChanges();
   }
 
+  function getTreeElementSelector(domIndex: number) {
+    return `app-tree-viewer > div > div:nth-child(2) > div:nth-child(${domIndex}) .tree-view-item-key`;
+  }
+
   function selectFirstElementClickRenameEnterTextAndHitEnter(newName: string) {
-    const firstNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+    const firstNode = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
     const renameButton = fixture.debugElement.query(By.css('#rename'));
     firstNode.nativeElement.click(); fixture.detectChanges();
     renameButton.nativeElement.click(); fixture.detectChanges();
@@ -99,7 +106,7 @@ describe('TestNavigatorComponent', () => {
   }
 
   function selectFirstElementClickNewFileEnterTextAndHitEnter(newName: string) {
-    const firstNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
+    const firstNode = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
     const newFileButton = fixture.debugElement.query(By.css('#new-file'));
     firstNode.nativeElement.click(); fixture.detectChanges();
     newFileButton.nativeElement.click(); fixture.detectChanges();
@@ -107,6 +114,20 @@ describe('TestNavigatorComponent', () => {
     inputBox.nativeElement.value = newName;
     inputBox.triggerEventHandler('keyup.enter', {});
     tick(); fixture.detectChanges();
+  }
+
+  function selectFileAndHitEnter() {
+    const fileElement = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
+    const keyboardEnabledTreeViewer = fixture.debugElement.query(By.css('.tree-viewer-keyboard-decorator'));
+    fileElement.nativeElement.click();
+    keyboardEnabledTreeViewer.triggerEventHandler('keyup', {key: 'Enter'});
+  }
+
+  function selectFolderAndHitEnter() {
+    const folderElement = fixture.debugElement.query(By.css(getTreeElementSelector(SUBFOLDER_DOM_INDEX)));
+    const keyboardEnabledTreeViewer = fixture.debugElement.query(By.css('.tree-viewer-keyboard-decorator'));
+    folderElement.nativeElement.click();
+    keyboardEnabledTreeViewer.triggerEventHandler('keyup', {key: 'Enter'});
   }
 
   it('should create', () => {
@@ -1131,5 +1152,40 @@ describe('TestNavigatorComponent', () => {
     expect(workspaceRootActivityIcon.nativeElement.classList).not.toContain('fa-user');
     expect(workspaceRootActivityIcon.nativeElement.classList).not.toContain('user-activity');
     expect(workspaceRootActivityIcon.nativeElement.title).toBeFalsy();
+  })));
+
+  it('opens selected file on Enter', fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    let openHasBeenCalled = false;
+    let actualPayload: any = null;
+    messageBus.subscribe(NAVIGATION_OPEN, (payload) => {
+      openHasBeenCalled = true;
+      actualPayload = payload;
+    });
+    component.model.expanded = true;
+    fixture.detectChanges();
+
+    // when
+    selectFileAndHitEnter();
+
+    // then
+    expect(openHasBeenCalled).toBeTruthy();
+    expect(actualPayload).toEqual(jasmine.objectContaining({id: 'src/test/java/test.tcl'}));
+  })));
+
+  it('does not attempt to open selected folder on Enter', fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+    // given
+    await component.updateModel();
+    let openHasBeenCalled = false;
+    messageBus.subscribe(NAVIGATION_OPEN, () => openHasBeenCalled = true);
+    component.model.expanded = true;
+    fixture.detectChanges();
+
+    // when
+    selectFolderAndHitEnter();
+
+    // then
+    expect(openHasBeenCalled).toBeFalsy();
   })));
 });
