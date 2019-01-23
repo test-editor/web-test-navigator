@@ -68,7 +68,7 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
     indicatorFields: [],
     onKeyPress: new Map([...Array.from(this.commonActions.arrowKeyNavigation).map(
       ([key, action]): [string, TreeNodeAction] => [key, (node: TreeNode) => this.renameRunning ? null : action(node)]),
-      ['Enter', (node: TestNavigatorTreeNode) => this.renameRunning ? null : this.open(node)],
+      ['Enter', (node: TestNavigatorTreeNode) => node.expanded !== undefined || this.renameRunning ? null : this.open(node)],
       ['F2', (node: TreeNode) => this.renameElement()],
       ['Delete', (node: TreeNode) => {
         if (!this.renameRunning) {
