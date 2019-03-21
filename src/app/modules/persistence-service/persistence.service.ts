@@ -2,8 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, isDevMode } from '@angular/core';
 import { MessagingService } from '@testeditor/messaging-service';
 import { Conflict, HttpProviderService, PullActionProtocol } from '@testeditor/testeditor-commons';
-import 'rxjs/add/operator/toPromise';
-import { Subscription } from 'rxjs/Subscription';
+
+import { Subscription } from 'rxjs';
 import { FilesBackedupPayload, FILES_BACKEDUP } from '../event-types';
 import { EditorDirtyChangedPayload, EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, NAVIGATION_CLOSE } from '../event-types-in';
 import { FilesChangedPayload, FILES_CHANGED, NAVIGATION_OPEN, NAVIGATION_RENAMED, SNACKBAR_DISPLAY_NOTIFICATION } from '../event-types-out';

@@ -83,10 +83,10 @@ describe('TestNavigatorComponent', () => {
 
   function clickDeleteAndConfirmOnFirstNode() {
     const deleteButton = fixture.debugElement.query(By.css('.embedded-delete-button'));
-    deleteButton.nativeElement.click();
+    deleteButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     const confirmButton = fixture.debugElement.query(By.css('.confirm-action-confirm-button'));
-    confirmButton.nativeElement.click();
+    confirmButton.triggerEventHandler('click', null);
     tick(); fixture.detectChanges();
   }
 
@@ -97,8 +97,8 @@ describe('TestNavigatorComponent', () => {
   function selectFirstElementClickRenameEnterTextAndHitEnter(newName: string) {
     const firstNode = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
     const renameButton = fixture.debugElement.query(By.css('#rename'));
-    firstNode.nativeElement.click(); fixture.detectChanges();
-    renameButton.nativeElement.click(); fixture.detectChanges();
+    firstNode.triggerEventHandler('click', null); fixture.detectChanges();
+    renameButton.triggerEventHandler('click', null); fixture.detectChanges();
     const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
     inputBox.nativeElement.value = newName;
     inputBox.triggerEventHandler('keyup.enter', {});
@@ -108,8 +108,8 @@ describe('TestNavigatorComponent', () => {
   function selectFirstElementClickNewFileEnterTextAndHitEnter(newName: string) {
     const firstNode = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
     const newFileButton = fixture.debugElement.query(By.css('#new-file'));
-    firstNode.nativeElement.click(); fixture.detectChanges();
-    newFileButton.nativeElement.click(); fixture.detectChanges();
+    firstNode.triggerEventHandler('click', null); fixture.detectChanges();
+    newFileButton.triggerEventHandler('click', null); fixture.detectChanges();
     const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
     inputBox.nativeElement.value = newName;
     inputBox.triggerEventHandler('keyup.enter', {});
@@ -119,15 +119,15 @@ describe('TestNavigatorComponent', () => {
   function selectFileAndHitEnter() {
     const fileElement = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
     const keyboardEnabledTreeViewer = fixture.debugElement.query(By.css('.tree-viewer-keyboard-decorator'));
-    fileElement.nativeElement.click();
-    keyboardEnabledTreeViewer.triggerEventHandler('keyup', {key: 'Enter'});
+    fileElement.triggerEventHandler('click', null);
+    keyboardEnabledTreeViewer.triggerEventHandler('keydown', {key: 'Enter'});
   }
 
   function selectFolderAndHitEnter() {
     const folderElement = fixture.debugElement.query(By.css(getTreeElementSelector(SUBFOLDER_DOM_INDEX)));
     const keyboardEnabledTreeViewer = fixture.debugElement.query(By.css('.tree-viewer-keyboard-decorator'));
-    folderElement.nativeElement.click();
-    keyboardEnabledTreeViewer.triggerEventHandler('keyup', {key: 'Enter'});
+    folderElement.triggerEventHandler('click', null);
+    keyboardEnabledTreeViewer.triggerEventHandler('keydown', {key: 'Enter'});
   }
 
   it('should create', () => {
@@ -136,13 +136,13 @@ describe('TestNavigatorComponent', () => {
 
   it('updates filter state on event from filter-bar child component', async () => {
     // given
-    const tslFilterButton = fixture.debugElement.query(By.css('#filter-bar > label')).nativeElement;
+    const tslFilterButton = fixture.debugElement.query(By.css('#filter-bar > label'));
     await component.updateModel();
     const tslFile = component.model.children[2]; expect(tslFile.name).toEqual('test.tsl');
     const tclFile = component.model.children[1]; expect(tclFile.name).toEqual('test.tcl');
 
     // when
-    tslFilterButton.click();
+    tslFilterButton.triggerEventHandler('click', null);
 
     // then
     expect(tslFile.cssClasses).not.toContain('hidden');
@@ -155,8 +155,8 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     const newFileButton = fixture.debugElement.query(By.css('#new-file'));
     const contextElement = fixture.debugElement.query(By.css('.tree-view-item-key'));
-    contextElement.nativeElement.click(); fixture.detectChanges();
-    newFileButton.nativeElement.click(); fixture.detectChanges();
+    contextElement.triggerEventHandler('click', null); fixture.detectChanges();
+    newFileButton.triggerEventHandler('click', null); fixture.detectChanges();
     const inputBox = fixture.debugElement.query(By.css('.navInputBox > input'));
     inputBox.nativeElement.value = 'newElementName';
 
@@ -176,7 +176,7 @@ describe('TestNavigatorComponent', () => {
     const root = fixture.debugElement.query(By.css('.tree-view-item-key'));
 
     // when
-    root.nativeElement.click(); fixture.detectChanges();
+    root.triggerEventHandler('click', null); fixture.detectChanges();
 
     // then
     expect(renameButton.nativeElement.disabled).toBeTruthy();
@@ -192,7 +192,7 @@ describe('TestNavigatorComponent', () => {
     const testNode = fixture.debugElement.query(By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
 
     // when
-    testNode.nativeElement.click(); fixture.detectChanges();
+    testNode.triggerEventHandler('click', null); fixture.detectChanges();
 
     // then
     expect(renameButton.nativeElement.disabled).toBeFalsy();
@@ -231,7 +231,7 @@ describe('TestNavigatorComponent', () => {
        const renameButton = fixture.debugElement.query(By.css('#rename'));
        const testNode = fixture.debugElement.query(
          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
-       testNode.nativeElement.click(); // thus this node is selected
+       testNode.triggerEventHandler('click', null); // thus this node is selected
        fixture.detectChanges();
        spyOn(messageBus, 'publish').and.callFake(async (id: string, payload: InputBoxConfig) => {
          if (id === TREE_NODE_RENAME_SELECTED) {
@@ -242,7 +242,7 @@ describe('TestNavigatorComponent', () => {
        // when
        component.renameElement();
        tick();
-       testNode.nativeElement.click(); // thus this node is selected
+       testNode.triggerEventHandler('click', null); // thus this node is selected
        fixture.detectChanges();
 
        // then
@@ -259,7 +259,7 @@ describe('TestNavigatorComponent', () => {
        const renameButton = fixture.debugElement.query(By.css('#rename'));
        const testNode = fixture.debugElement.query(
          By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
-       testNode.nativeElement.click(); // thus this node is selected
+       testNode.triggerEventHandler('click', null); // thus this node is selected
        fixture.detectChanges();
        when(mockPersistenceService.renameResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl'))
          .thenThrow(new Error('some')); // make renaming unsuccessfull => throw an error
@@ -272,7 +272,7 @@ describe('TestNavigatorComponent', () => {
        // when
        component.renameElement();
        tick();
-       testNode.nativeElement.click(); // thus this node is selected
+       testNode.triggerEventHandler('click', null); // thus this node is selected
        fixture.detectChanges();
 
        // then
@@ -288,7 +288,7 @@ describe('TestNavigatorComponent', () => {
     const renameButton = fixture.debugElement.query(By.css('#rename'));
     const testNode = fixture.debugElement.query(
       By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key'));
-    testNode.nativeElement.click(); // thus this node is selected
+    testNode.triggerEventHandler('click', null); // thus this node is selected
 
     // when
     component.renameElement();
@@ -552,8 +552,8 @@ describe('TestNavigatorComponent', () => {
     // when
     component.select(component.model.children[2]);
     fixture.detectChanges();
-    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
-    cutButton.click();
+    const cutButton = fixture.debugElement.query(By.css('#cut'));
+    cutButton.triggerEventHandler('click', null);
     fixture.detectChanges();
 
     // then
@@ -568,8 +568,8 @@ describe('TestNavigatorComponent', () => {
     // when
     component.select(component.model.children[2]);
     fixture.detectChanges();
-    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
-    copyButton.click();
+    const copyButton = fixture.debugElement.query(By.css('#copy'));
+    copyButton.triggerEventHandler('click', null);
     fixture.detectChanges();
 
     // then
@@ -582,14 +582,14 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[2]);
     fixture.detectChanges();
-    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
-    copyButton.click();
+    const copyButton = fixture.debugElement.query(By.css('#copy'));
+    copyButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
 
     // when
-    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
-    cutButton.click();
+    const cutButton = fixture.debugElement.query(By.css('#cut'));
+    cutButton.triggerEventHandler('click', null);
     fixture.detectChanges();
 
     // then
@@ -603,14 +603,14 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[2]);
     fixture.detectChanges();
-    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
-    cutButton.click();
+    const cutButton = fixture.debugElement.query(By.css('#cut'));
+    cutButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
 
     // when
-    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
-    copyButton.click();
+    const copyButton = fixture.debugElement.query(By.css('#copy'));
+    copyButton.triggerEventHandler('click', null);
     fixture.detectChanges();
 
     // then
@@ -624,8 +624,8 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[1]);
     fixture.detectChanges();
-    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
-    cutButton.click();
+    const cutButton = fixture.debugElement.query(By.css('#cut'));
+    cutButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
 
@@ -644,8 +644,8 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[1]);
     fixture.detectChanges();
-    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
-    copyButton.click();
+    const copyButton = fixture.debugElement.query(By.css('#copy'));
+    copyButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
     when(mockPersistenceService.copyResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl' ))
@@ -655,9 +655,9 @@ describe('TestNavigatorComponent', () => {
     // when
     component.select(component.model.children[0]); // select subfolder
     fixture.detectChanges();
-    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
-    expect(pasteButton.disabled).toBeFalsy();
-    pasteButton.click();
+    const pasteButton = fixture.debugElement.query(By.css('#paste'));
+    expect(pasteButton.nativeElement.disabled).toBeFalsy();
+    pasteButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     tick();
 
@@ -674,8 +674,8 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[1]);
     fixture.detectChanges();
-    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
-    cutButton.click();
+    const cutButton = fixture.debugElement.query(By.css('#cut'));
+    cutButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCuttedNodeInClipboard()).toBeTruthy('hasCuttedNodeInClipboard');
     when(mockPersistenceService.renameResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl'))
@@ -685,9 +685,9 @@ describe('TestNavigatorComponent', () => {
     // when
     component.select(component.model.children[0]); // select subfolder
     fixture.detectChanges();
-    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
-    expect(pasteButton.disabled).toBeFalsy();
-    pasteButton.click();
+    const pasteButton = fixture.debugElement.query(By.css('#paste'));
+    expect(pasteButton.nativeElement.disabled).toBeFalsy();
+    pasteButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     tick();
 
@@ -705,8 +705,8 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[1]);
     fixture.detectChanges();
-    const copyButton = fixture.debugElement.query(By.css('#copy')).nativeElement;
-    copyButton.click();
+    const copyButton = fixture.debugElement.query(By.css('#copy'));
+    copyButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
     when(mockPersistenceService.copyResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl' ))
@@ -716,9 +716,9 @@ describe('TestNavigatorComponent', () => {
     // when
     component.select(component.model.children[0]); // select subfolder
     fixture.detectChanges();
-    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
-    expect(pasteButton.disabled).toBeFalsy();
-    pasteButton.click();
+    const pasteButton = fixture.debugElement.query(By.css('#paste'));
+    expect(pasteButton.nativeElement.disabled).toBeFalsy();
+    pasteButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     tick();
 
@@ -734,8 +734,8 @@ describe('TestNavigatorComponent', () => {
     fixture.detectChanges();
     component.select(component.model.children[1]);
     fixture.detectChanges();
-    const cutButton = fixture.debugElement.query(By.css('#cut')).nativeElement;
-    cutButton.click();
+    const cutButton = fixture.debugElement.query(By.css('#cut'));
+    cutButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     expect(component.hasCuttedNodeInClipboard()).toBeTruthy();
     when(mockPersistenceService.renameResource('src/test/java/subfolder/test.tcl', 'src/test/java/test.tcl' ))
@@ -745,9 +745,9 @@ describe('TestNavigatorComponent', () => {
     // when
     component.select(component.model.children[0]); // select subfolder
     fixture.detectChanges();
-    const pasteButton = fixture.debugElement.query(By.css('#paste')).nativeElement;
-    expect(pasteButton.disabled).toBeFalsy();
-    pasteButton.click();
+    const pasteButton = fixture.debugElement.query(By.css('#paste'));
+    expect(pasteButton.nativeElement.disabled).toBeFalsy();
+    pasteButton.triggerEventHandler('click', null);
     fixture.detectChanges();
     tick();
 
