@@ -3,7 +3,7 @@ import { MessagingService } from '@testeditor/messaging-service';
 import { ActionInTree, CommonTreeNodeActions, Conflict, DeleteAction, EmbeddedDeleteButton, IndicatorFieldSetup, InputBoxConfig, isConflict,
   TreeNode, TreeNodeAction, TreeViewerInputBoxConfig, TreeViewerKeyboardConfig, TREE_NODE_COMMENCE_ACTION_AT_SELECTED,
   TREE_NODE_CREATE_AT_SELECTED, TREE_NODE_DESELECTED, TREE_NODE_RENAME_SELECTED, TREE_NODE_SELECTED } from '@testeditor/testeditor-commons';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription } from 'rxjs';
 import { WORKSPACE_MARKER_UPDATE } from '../event-types';
 import { EDITOR_CLOSE, EDITOR_DIRTY_CHANGED, EDITOR_SAVE_COMPLETED, ElementActivity, UserActivityData,
   USER_ACTIVITY_UPDATED } from '../event-types-in';
