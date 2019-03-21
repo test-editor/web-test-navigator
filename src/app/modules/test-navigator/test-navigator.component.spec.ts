@@ -120,14 +120,14 @@ describe('TestNavigatorComponent', () => {
     const fileElement = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
     const keyboardEnabledTreeViewer = fixture.debugElement.query(By.css('.tree-viewer-keyboard-decorator'));
     fileElement.triggerEventHandler('click', null);
-    keyboardEnabledTreeViewer.triggerEventHandler('keyup', {key: 'Enter'});
+    keyboardEnabledTreeViewer.triggerEventHandler('keydown', {key: 'Enter'});
   }
 
   function selectFolderAndHitEnter() {
     const folderElement = fixture.debugElement.query(By.css(getTreeElementSelector(SUBFOLDER_DOM_INDEX)));
     const keyboardEnabledTreeViewer = fixture.debugElement.query(By.css('.tree-viewer-keyboard-decorator'));
     folderElement.triggerEventHandler('click', null);
-    keyboardEnabledTreeViewer.triggerEventHandler('keyup', {key: 'Enter'});
+    keyboardEnabledTreeViewer.triggerEventHandler('keydown', {key: 'Enter'});
   }
 
   it('should create', () => {
