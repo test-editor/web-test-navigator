@@ -62,10 +62,10 @@ describe('FilterBarComponent', () => {
   it('should fire an event passing on the filter state when a button is pressed', fakeAsync(() => {
     // given
     hostComponent.filterState = undefined;
-    const tslButton = fixture.debugElement.query(By.css('#filter-bar > label')).nativeElement;
+    const tslButton = fixture.debugElement.query(By.css('#filter-bar > label'));
 
     // when
-    tslButton.click();
+    tslButton.triggerEventHandler('click', null);
     tick();
 
     // then
@@ -90,10 +90,10 @@ describe('FilterBarComponent', () => {
   it('shows markers on types that have been filtered out', fakeAsync(() => {
     // given
     hostComponent.filterState = { tsl: true, tcl: false, aml: false };
-    const tslButton = fixture.debugElement.query(By.css('#filter-bar > label')).nativeElement;
+    const tslButton = fixture.debugElement.query(By.css('#filter-bar > label'));
 
     // when
-    tslButton.click();
+    tslButton.triggerEventHandler('click', null);
     tick();
 
     // then
@@ -112,12 +112,12 @@ describe('FilterBarComponent', () => {
 
   it('sets the right css classes to display error markers on types that have been filtered out', () => {
     // given
-    const tclButton = fixture.debugElement.query(By.css('#filter-tcl')).nativeElement;
-    const amlButton = fixture.debugElement.query(By.css('#filter-aml')).nativeElement;
+    const tclButton = fixture.debugElement.query(By.css('#filter-tcl'));
+    const amlButton = fixture.debugElement.query(By.css('#filter-aml'));
 
     // when
-    tclButton.click();
-    amlButton.click();
+    tclButton.triggerEventHandler('click', null);
+    amlButton.triggerEventHandler('click', null);
 
     // then
     const markerIcon = fixture.debugElement.query(By.css('#filter-tsl .validation-marker'));
@@ -132,12 +132,12 @@ describe('FilterBarComponent', () => {
 
   it('sets the right css classes to display warning markers on types that have been filtered out', () => {
     // given
-    const tslButton = fixture.debugElement.query(By.css('#filter-tsl')).nativeElement;
-    const amlButton = fixture.debugElement.query(By.css('#filter-aml')).nativeElement;
+    const tslButton = fixture.debugElement.query(By.css('#filter-tsl'));
+    const amlButton = fixture.debugElement.query(By.css('#filter-aml'));
 
     // when
-    tslButton.click();
-    amlButton.click();
+    tslButton.triggerEventHandler('click', null);
+    amlButton.triggerEventHandler('click', null);
 
     // then
     const markerIcon = fixture.debugElement.query(By.css('#filter-tcl .validation-marker'));
@@ -152,12 +152,12 @@ describe('FilterBarComponent', () => {
 
   it('sets the right css classes to display info markers on types that have been filtered out', () => {
     // given
-    const tclButton = fixture.debugElement.query(By.css('#filter-tcl')).nativeElement;
-    const tslButton = fixture.debugElement.query(By.css('#filter-tsl')).nativeElement;
+    const tclButton = fixture.debugElement.query(By.css('#filter-tcl'));
+    const tslButton = fixture.debugElement.query(By.css('#filter-tsl'));
 
     // when
-    tclButton.click();
-    tslButton.click();
+    tclButton.triggerEventHandler('click', null);
+    tslButton.triggerEventHandler('click', null);
 
     // then
     const markerIcon = fixture.debugElement.query(By.css('#filter-aml .validation-marker'));
@@ -172,12 +172,12 @@ describe('FilterBarComponent', () => {
 
   it('sets a tooltip summarizing the validation markers that are being filtered out', () => {
     // given
-    const tclButton = fixture.debugElement.query(By.css('#filter-tcl')).nativeElement;
-    const amlButton = fixture.debugElement.query(By.css('#filter-aml')).nativeElement;
+    const tclButton = fixture.debugElement.query(By.css('#filter-tcl'));
+    const amlButton = fixture.debugElement.query(By.css('#filter-aml'));
 
     // when
-    tclButton.click();
-    amlButton.click();
+    tclButton.triggerEventHandler('click', null);
+    amlButton.triggerEventHandler('click', null);
     fixture.detectChanges();
 
     // then
