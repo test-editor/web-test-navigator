@@ -31,6 +31,7 @@ describe('TestNavigatorComponent', () => {
   const SAMPLE_ACTIVITY = 'sample.activity';
   const SUBFOLDER_DOM_INDEX = 1;
   const TCL_FILE_DOM_INDEX = 2;
+  const RENAME_FOLDER_DOM_INDEX = 4;
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let mockFilenameValidator: FilenameValidator;
@@ -53,7 +54,10 @@ describe('TestNavigatorComponent', () => {
       name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
         {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
         {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []},
-        {name: 'subfolder', path: 'src/test/java/subfolder', type: ElementType.Folder, children: []}
+        {name: 'subfolder', path: 'src/test/java/subfolder', type: ElementType.Folder, children: []},
+        {name: 'zRenameMe', path: 'src/test/java/zRenameMe', type: ElementType.Folder, children: [
+          {name: 'nestedFile.tcl', path: 'src/test/java/zRenameMe/nestedFile.tcl', type: ElementType.File, children: []},
+        ]},
       ]});
     when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
     when(mockPersistenceService.renameResource(anyString(), anyString())).thenResolve('');
@@ -94,8 +98,8 @@ describe('TestNavigatorComponent', () => {
     return `app-tree-viewer > div > div:nth-child(2) > div:nth-child(${domIndex}) .tree-view-item-key`;
   }
 
-  function selectFirstElementClickRenameEnterTextAndHitEnter(newName: string) {
-    const firstNode = fixture.debugElement.query(By.css(getTreeElementSelector(TCL_FILE_DOM_INDEX)));
+  function selectElementClickRenameEnterTextAndHitEnter(newName: string, elementIndex = TCL_FILE_DOM_INDEX) {
+    const firstNode = fixture.debugElement.query(By.css(getTreeElementSelector(elementIndex)));
     const renameButton = fixture.debugElement.query(By.css('#rename'));
     firstNode.triggerEventHandler('click', null); fixture.detectChanges();
     renameButton.triggerEventHandler('click', null); fixture.detectChanges();
@@ -428,6 +432,21 @@ describe('TestNavigatorComponent', () => {
     expect(component.model.children[1].validation).toEqual(jasmine.objectContaining({errors: 23, warnings: 42, infos: 3}));
   }));
 
+  it('changes child node ID after successful rename', fakeAsync(async () => {
+    // given
+    await component.updateModel();
+    component.model.expanded = true;
+    fixture.detectChanges();
+    const parent = component.model.children.find((node) => node.id === 'src/test/java/zRenameMe');
+    expect(parent.children[0].id).toEqual('src/test/java/zRenameMe/nestedFile.tcl', 'test assumptions not satisfied!');
+
+    // when
+    selectElementClickRenameEnterTextAndHitEnter('renamed', RENAME_FOLDER_DOM_INDEX);
+
+    // then
+    expect(parent.children[0].id).toEqual('src/test/java/renamed/nestedFile.tcl');
+  }));
+
   it('updates validation markers after a rename', fakeAsync(async () => {
     // given
     await component.updateModel();
@@ -440,7 +459,7 @@ describe('TestNavigatorComponent', () => {
     when(mockValidationService.getAllMarkerSummaries()).thenResolve(validationMarkerMap);
 
     // when
-    selectFirstElementClickRenameEnterTextAndHitEnter('renamed.tcl');
+    selectElementClickRenameEnterTextAndHitEnter('renamed.tcl');
 
     // then
     expect(component.model.validation).toEqual(jasmine.objectContaining({errors: 3, warnings: 5, infos: 7}));
