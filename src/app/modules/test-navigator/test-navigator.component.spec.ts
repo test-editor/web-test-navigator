@@ -32,6 +32,17 @@ describe('TestNavigatorComponent', () => {
   const SUBFOLDER_DOM_INDEX = 1;
   const TCL_FILE_DOM_INDEX = 2;
   const RENAME_FOLDER_DOM_INDEX = 4;
+  const dirTree = () => ({
+    name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
+      {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
+      {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []},
+      {name: 'subfolder', path: 'src/test/java/subfolder', type: ElementType.Folder, children: []},
+      {name: 'zRenameMe', path: 'src/test/java/zRenameMe', type: ElementType.Folder, children: [
+        {name: 'nestedFile.tcl', path: 'src/test/java/zRenameMe/nestedFile.tcl', type: ElementType.File, children: []},
+      ]},
+    ]});
+
+
   let component: TestNavigatorComponent;
   let fixture: ComponentFixture<TestNavigatorComponent>;
   let mockFilenameValidator: FilenameValidator;
@@ -50,15 +61,7 @@ describe('TestNavigatorComponent', () => {
 
     mockFilenameValidator = mock(FilenameValidator);
     when(mockFilenameValidator.isValidName(anyString(), anything())).thenReturn(true);
-    when(mockPersistenceService.listFiles()).thenResolve({
-      name: 'root', path: 'src/test/java', type: ElementType.Folder, children: [
-        {name: 'test.tcl', path: 'src/test/java/test.tcl', type: ElementType.File, children: []},
-        {name: 'test.tsl', path: 'src/test/java/test.tsl', type: ElementType.File, children: []},
-        {name: 'subfolder', path: 'src/test/java/subfolder', type: ElementType.Folder, children: []},
-        {name: 'zRenameMe', path: 'src/test/java/zRenameMe', type: ElementType.Folder, children: [
-          {name: 'nestedFile.tcl', path: 'src/test/java/zRenameMe/nestedFile.tcl', type: ElementType.File, children: []},
-        ]},
-      ]});
+    when(mockPersistenceService.listFiles()).thenResolve(dirTree());
     when(mockPersistenceService.deleteResource(anyString())).thenResolve('');
     when(mockPersistenceService.renameResource(anyString(), anyString())).thenResolve('');
     when(mockPersistenceService.createResource(anyString(), anything())).thenResolve('');
@@ -360,7 +363,7 @@ describe('TestNavigatorComponent', () => {
        clickDeleteAndConfirmOnFirstNode();
 
        // then
-       expect(component.model.children.length).toEqual(2);
+       expect(component.model.children.length).toEqual(dirTree().children.length - 1);
        expect(component.model.children[1].name).not.toEqual(elementBeingDeleted.name);
      }));
 
@@ -377,7 +380,7 @@ describe('TestNavigatorComponent', () => {
        clickDeleteAndConfirmOnFirstNode();
 
        // then
-       expect(component.model.children.length).toEqual(3);
+       expect(component.model.children.length).toEqual(dirTree().children.length);
        expect(component.model.children[1].name).toEqual(elementFailingToBeDeleted.name);
        expect(fixture.debugElement.query(By.css('#errorMessage')).nativeElement.innerText).toEqual('Error while deleting element!');
        flush();
@@ -714,7 +717,7 @@ describe('TestNavigatorComponent', () => {
     expect(component.model.children[0].children[0].name).toEqual('test.tcl');
     expect(component.model.children[0].children[0].id).toEqual('src/test/java/subfolder/test.tcl');
     expect(component.model.children[1].name).toEqual('test.tsl');
-    expect(component.model.children.length).toEqual(2);
+    expect(component.model.children.length).toEqual(dirTree().children.length - 1);
     expect(component.hasCuttedNodeInClipboard()).toBeFalsy();
     expect(component.hasCopiedNodeInClipboard()).toBeFalsy();
   }));
@@ -743,7 +746,7 @@ describe('TestNavigatorComponent', () => {
 
     // then
     expect(component.model.children[0].children.length).toEqual(0);
-    expect(component.model.children.length).toEqual(3);
+    expect(component.model.children.length).toEqual(dirTree().children.length);
     expect(component.hasCuttedNodeInClipboard()).toBeFalsy();
     expect(component.hasCopiedNodeInClipboard()).toBeTruthy();
   }));
