@@ -137,7 +137,11 @@ export class TestNavigatorTreeNode extends TreeNode {
   }
 
   get id(): string {
-    return this.workspaceElement.path;
+    let result = this.workspaceElement.path;
+    if (this.parent) {
+      result = this.parent.id + '/' + this.name;
+    }
+    return result;
   }
 
   get activities(): UserActivitySet {
