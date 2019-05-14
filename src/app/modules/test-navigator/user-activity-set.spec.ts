@@ -65,8 +65,8 @@ describe('CompositeUserActivitySet', () => {
       activtySetUnderTest.set('not/a_valid_child_of/iam/root', new AtomicUserActivitySet([{type: 'sampleActivity', user: ''}]));
       const treeNode = new TestNavigatorTreeNode({
         name: 'root', path: 'iam/root', type: ElementType.Folder, children: [
-          { name: 'element1', path: 'iam/root/an_element', type: ElementType.Folder, children: [] },
-          { name: 'element2', path: 'iam/root/closer_ancestor', type: ElementType.Folder, children: []}]
+          { name: 'an_element', path: 'iam/root/an_element', type: ElementType.Folder, children: [] },
+          { name: 'closer_ancestor', path: 'iam/root/closer_ancestor', type: ElementType.Folder, children: []}]
       });
       treeNode.expanded = true;
 
@@ -75,9 +75,9 @@ describe('CompositeUserActivitySet', () => {
 
       // then
       expect(actualfilteredSet.getTypes('iam/root')).toContain('sampleActivity');
-      expect(actualfilteredSet.getTypes('iam/root/closer_ancestor/of/this').length).toEqual(0);
+      expect(actualfilteredSet.getTypes('iam/root/closer_ancestor/of/this').length).toEqual(0, 'closer ancestor was not filtered out!');
       expect(actualfilteredSet.getTypes('iam/root/non_existing')).toContain('sampleActivity');
-      expect(actualfilteredSet.getTypes('not/a_valid_child_of/iam/root').length).toEqual(0);
+      expect(actualfilteredSet.getTypes('not/a_valid_child_of/iam/root').length).toEqual(0, 'invalid child node was not filtered out!');
     });
   });
 
