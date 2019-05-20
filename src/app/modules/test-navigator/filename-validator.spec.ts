@@ -101,7 +101,7 @@ const foldernameCases = [
   description: `should prevent folder names with ${char} in them`
 })));
 
-describe('FilnameValidator', () => {
+describe('FilenameValidator', () => {
 
   let validator: FilenameValidator;
 

@@ -62,7 +62,12 @@ export class TestNavigatorComponent implements OnInit, OnDestroy {
         this.open(testNavNode);
       }
     },
-    onIconClick: (node: TreeNode) => node.expanded = !node.expanded,
+    onIconClick: (node: TreeNode) => {
+      const testNavNode = (node as TestNavigatorTreeNode);
+      if (testNavNode.type === ElementType.Folder) {
+        node.expanded = !node.expanded;
+      }
+    },
     embeddedButton: (node: TreeNode) => new EmbeddedDeleteButton(
       new DeleteAction(node, (_node: TestNavigatorTreeNode) => this.onDeleteConfirm(_node))),
     indicatorFields: [],
