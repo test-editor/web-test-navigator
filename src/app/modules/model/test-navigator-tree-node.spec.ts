@@ -191,6 +191,17 @@ describe('TestNavigatorTreeNode', () => {
     expect(treeNode.leafCssClasses).toEqual('fas fa-file tsl-file-color');
   });
 
+  it('applies tcl icon class for tfr files', () => {
+    // given
+    const tfrFile = 'test.tfr';
+
+    // when
+    const treeNode = new TestNavigatorTreeNode({ name: tfrFile, path: `path/to/${tfrFile}`, type: ElementType.File, children: undefined });
+
+    // then
+    expect(treeNode.leafCssClasses).toEqual('fas fa-file tcl-file-color');
+  });
+
   it('allows to set validation marker data for files', () => {
     // given
     const treeNode = new TestNavigatorTreeNode({ name: 'test.tcl', path: 'path/to/test.tcl', type: ElementType.File, children: undefined });
