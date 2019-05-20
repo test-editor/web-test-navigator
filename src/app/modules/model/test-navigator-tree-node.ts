@@ -12,7 +12,7 @@ export class TestNavigatorTreeNode extends TreeNode {
     'bmp': 'fas fas fa-image', 'png': 'fas fa-image', 'jpg': 'fas fa-image',
     'jpeg': 'fas fa-image', 'gif': 'fas fa-image', 'svg': 'fas fa-image',
     'tsl': 'fas fa-file tsl-file-color', 'tcl': 'fas fa-file tcl-file-color', 'tml': 'fas fa-file tcl-file-color',
-    'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color'
+    'config': 'fas fa-file tcl-file-color', 'aml': 'fas fa-file aml-file-color', 'tfr': 'fas fa-file tcl-file-color'
   };
 
   private _activities = new CompositeUserActivitySet();
