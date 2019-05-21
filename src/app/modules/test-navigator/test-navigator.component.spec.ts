@@ -156,6 +156,42 @@ describe('TestNavigatorComponent', () => {
     expect(tclFile.cssClasses).toContain('hidden');
   });
 
+  it('ensures files cannot be expanded by clicking the icon',
+    fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+      // given
+      await component.updateModel(); fixture.detectChanges();
+      const tclIcon = fixture.debugElement.query(
+        By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(2) .tree-view-item-key > div > span')
+      );
+      expect(tclIcon.classes['fa-file']).toBeTruthy();
+
+      // when
+      tclIcon.triggerEventHandler('click', new MouseEvent('click')); fixture.detectChanges();
+
+      // then
+      expect(tclIcon.classes['fa-file']).toBeTruthy();
+    }
+  )));
+
+  it('ensures folders can be expanded by clicking the icon',
+    fakeAsync(inject([MessagingService], async (messageBus: MessagingService) => {
+      // given
+      await component.updateModel(); fixture.detectChanges();
+      const folderIcon = fixture.debugElement.query(
+        By.css('app-tree-viewer > div > div:nth-child(2) > div:nth-child(1) .tree-view-item-key > div > span')
+      );
+      expect(folderIcon.classes['fa-chevron-right']).toBeTruthy();
+      expect(folderIcon.classes['fa-chevron-down']).toBeFalsy();
+
+      // when
+      folderIcon.triggerEventHandler('click', new MouseEvent('click')); fixture.detectChanges();
+
+      // then
+      expect(folderIcon.classes['fa-chevron-right']).toBeFalsy();
+      expect(folderIcon.classes['fa-chevron-down']).toBeTruthy();
+    }
+  )));
+
   it('validates the input using FilenameValidator during a new element request', async () => {
     // given
     await component.updateModel();
