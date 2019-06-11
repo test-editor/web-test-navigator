@@ -24,7 +24,7 @@ describe('filterFor', () => {
   });
 
   [[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 1], [0, 1, 1, 1], [1, 0, 0, 0], [1, 0, 1, 0], [1, 1, 0, 1], [1, 1, 1, 1]].forEach((state) => {
-    ['tcl', 'tml', 'config', 'tfr', 'json'].forEach((extension) => {
+    ['tcl', 'tml', 'config', 'tfr', 'json', 'yaml', 'csv'].forEach((extension) => {
       it(`${extension} files are ${state[3] ? 'shown' : 'hidden'} for filter state [${state.slice(0, 3)}]`, () => {
         // given
         const filterState: FilterState = { tsl: !!state[0], tcl: !!state[1], aml: !!state[2] };
